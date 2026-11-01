@@ -1,78 +1,422 @@
 # DashboardOS 2.0
 
-Atualização de aparência e autenticação: consulte [ATUALIZACAO_PREMIUM.md](ATUALIZACAO_PREMIUM.md). O acesso agora começa em `/login`. Os dados atuais foram preservados; não execute o gerador para atualizar a aplicação.
+**Sistema web para gerenciamento de ordens de serviço, funcionários, equipes, acessos e renovações.**
 
-Correções de estabilização: consulte [RELATORIO_ESTABILIZACAO.md](RELATORIO_ESTABILIZACAO.md) para diagnóstico, cópia de restauração, resultados dos testes e validação visual pendente. Reinicie o Flask e atualize o navegador com `Ctrl+F5` para carregar as correções.
+O DashboardOS 2.0 é um projeto desenvolvido para facilitar o acompanhamento de informações operacionais por meio de uma interface organizada, com indicadores, gráficos, tabelas e ferramentas de consulta.
 
-Aplicação empresarial local em Flask, com oito páginas, dados fictícios e Excel como fonte principal. Criada em uma pasta independente; não altera projetos anteriores. A composição segue a imagem fornecida: painel central, menu azul-marinho com avatar, quatro indicadores, gráficos amplos à esquerda e cartão vertical com rosca à direita. Bordas e componentes têm acabamento arredondado.
+O sistema reúne dados que normalmente seriam acompanhados em diferentes planilhas, permitindo visualizar prazos, identificar pendências, consultar registros e acompanhar situações que exigem atenção.
 
-## Executar no Windows / VS Code
+Esta versão representa uma etapa importante da evolução do projeto, com melhorias na interface, autenticação de usuários, gerenciamento de registros e preparação para utilização em ambiente de produção.
 
-Abra esta pasta no VS Code (`Arquivo > Abrir Pasta > DashboardOS_2.0`). No terminal PowerShell:
+## 1. Sobre o projeto
+
+O DashboardOS nasceu da necessidade de tornar o controle de informações operacionais mais simples e eficiente.
+
+Em atividades que envolvem funcionários, equipes, ordens de serviço e permissões de acesso, acompanhar datas de vencimento e solicitações de renovação é fundamental para evitar atrasos e manter os registros organizados.
+
+O sistema foi desenvolvido para centralizar essas informações e apresentá-las de forma visual, facilitando a identificação de prioridades.
+
+Entre seus principais objetivos estão:
+
+- Organizar informações de funcionários e equipes.
+- Acompanhar ordens de serviço e seus respectivos prazos.
+- Controlar a validade de acessos.
+- Identificar vencimentos e situações urgentes.
+- Registrar e acompanhar renovações.
+- Disponibilizar indicadores, gráficos e relatórios.
+- Facilitar consultas e atualizações dos dados.
+
+O projeto também tem finalidade de aprendizado e aprimoramento profissional, envolvendo desenvolvimento web, manipulação de dados, organização de código, testes e implantação em servidor.
+
+## 2. Tecnologias utilizadas
+
+O DashboardOS 2.0 utiliza diferentes tecnologias, cada uma com uma função no desenvolvimento e funcionamento do sistema.
+
+| Tecnologia | Utilização |
+|---|---|
+| Python | Regras de negócio e processamento dos dados |
+| Flask | Aplicação web e comunicação entre interface e servidor |
+| HTML | Estrutura das páginas |
+| CSS | Estilização, responsividade e aparência visual |
+| JavaScript | Interatividade, filtros e atualização da interface |
+| Excel | Armazenamento e organização dos dados operacionais |
+| SQLite | Persistência de informações relacionadas à autenticação |
+| Git | Controle de versões do código |
+| GitHub | Hospedagem e compartilhamento do repositório |
+| AWS EC2 | Hospedagem da aplicação |
+| Gunicorn | Execução da aplicação Python em produção |
+| Nginx | Servidor web e encaminhamento das requisições |
+
+A arquitetura separa as páginas, os arquivos visuais e as regras de negócio, facilitando a manutenção e a implementação de novas funcionalidades.
+
+## 3. Funcionalidades da versão 2.0
+
+### Dashboard principal
+
+A página inicial apresenta uma visão geral das informações cadastradas, utilizando indicadores e gráficos para facilitar o acompanhamento.
+
+Por meio dela, é possível consultar dados consolidados, identificar situações que merecem atenção e navegar para as áreas específicas do sistema.
+
+### Gerenciamento de funcionários
+
+Permite consultar e administrar registros de funcionários.
+
+Os usuários autorizados podem cadastrar, visualizar, editar e excluir informações, respeitando as validações e dependências existentes.
+
+### Gerenciamento de equipes
+
+Organiza os funcionários em equipes e permite acompanhar os vínculos entre os registros.
+
+Essa estrutura ajuda a relacionar informações operacionais aos respectivos responsáveis.
+
+### Ordens de serviço
+
+Permite acompanhar as ordens de serviço cadastradas, incluindo informações relacionadas a prazos, situação e prioridade.
+
+O sistema oferece recursos de consulta, pesquisa, filtragem e gerenciamento dos registros.
+
+### Controle de acessos
+
+Reúne informações sobre acessos e suas datas de validade.
+
+Essa funcionalidade auxilia no acompanhamento de permissões e na identificação de acessos próximos do vencimento.
+
+### Vencimentos
+
+Apresenta os registros classificados conforme seus prazos.
+
+As categorias utilizadas pelo sistema permitem distinguir situações vencidas, vencimentos próximos e registros com maior prazo disponível.
+
+### Renovações
+
+Permite acompanhar informações relacionadas às solicitações de renovação, facilitando a consulta de pendências e a organização do processo.
+
+### Relatórios
+
+Disponibiliza visualizações e recursos de exportação para auxiliar na análise dos dados.
+
+Os relatórios respeitam os filtros e critérios disponíveis na aplicação.
+
+## 4. Interface e experiência de utilização
+
+Uma das prioridades desta versão foi melhorar a organização visual do sistema.
+
+A interface utiliza um menu lateral para navegação entre as páginas, além de componentes com bordas arredondadas, gráficos interativos e tabelas com ferramentas de consulta.
+
+Entre os recursos disponíveis estão:
+
+- Alternância entre temas claro, escuro e automático.
+- Ajustes de tamanho das fontes.
+- Configurações de densidade e apresentação dos dados.
+- Menu lateral recolhível.
+- Pesquisa, filtros e ordenação nas tabelas.
+- Ampliação de gráficos para análise.
+- Preferências visuais individuais.
+
+As preferências de aparência são mantidas separadamente dos dados operacionais e das credenciais de acesso.
+
+## 5. Acesso ao sistema
+
+O DashboardOS 2.0 possui uma tela de autenticação e diferentes possibilidades de utilização.
+
+### Acesso administrativo
+
+Destinado aos usuários autorizados a gerenciar as informações.
+
+Após a autenticação, o administrador pode utilizar os recursos de cadastro, edição e exclusão, conforme as regras de cada área.
+
+### Modo visitante
+
+Permite conhecer e consultar as informações disponibilizadas pelo sistema sem realizar alterações nos registros.
+
+Nesse modo, é possível navegar pelas páginas, pesquisar informações, utilizar filtros, visualizar gráficos e consultar relatórios.
+
+As operações de criação, edição e exclusão permanecem bloqueadas.
+
+**Importante:** o sistema não deve ser publicado com credenciais administrativas de exemplo ou senhas compartilhadas.
+
+## 6. Tutorial de utilização
+
+Esta seção apresenta um roteiro básico para conhecer as principais funcionalidades do DashboardOS 2.0.
+
+### Passo 1 — Entrar na aplicação
+
+Abra o endereço da aplicação no navegador.
+
+Na tela inicial, escolha entre realizar a autenticação com uma conta autorizada ou acessar o modo visitante, quando disponível.
+
+### Passo 2 — Conhecer o dashboard
+
+Após entrar, utilize a página principal para observar os indicadores e gráficos.
+
+Essa visão permite compreender a situação geral dos registros e identificar quais informações precisam de uma análise mais detalhada.
+
+### Passo 3 — Navegar pelo menu lateral
+
+Utilize o menu lateral para acessar as diferentes áreas do sistema.
+
+O menu pode ser recolhido para disponibilizar mais espaço para tabelas e gráficos.
+
+### Passo 4 — Consultar funcionários e equipes
+
+Acesse as páginas correspondentes para visualizar os registros cadastrados.
+
+Utilize a pesquisa e os recursos de ordenação para encontrar informações específicas.
+
+Se estiver autenticado com permissão administrativa, também poderá realizar operações de gerenciamento.
+
+### Passo 5 — Acompanhar ordens de serviço
+
+Abra a página de ordens de serviço e utilize os filtros disponíveis para analisar os registros.
+
+Verifique principalmente os prazos, a situação das ordens e as informações de prioridade.
+
+### Passo 6 — Verificar acessos e vencimentos
+
+Acesse as páginas de acessos e vencimentos para identificar registros próximos do prazo final ou que já estejam vencidos.
+
+Essa consulta ajuda a organizar o acompanhamento e a definir quais situações devem ser verificadas primeiro.
+
+### Passo 7 — Consultar renovações
+
+Na página de renovações, acompanhe os registros relacionados às solicitações e seus respectivos estados.
+
+### Passo 8 — Utilizar gráficos e relatórios
+
+Interaja com os gráficos para ampliar as visualizações quando necessário.
+
+Utilize os filtros, as pesquisas e os recursos de exportação para obter informações mais específicas.
+
+### Passo 9 — Personalizar a aparência
+
+Abra as configurações disponíveis na interface para ajustar o tema, o tamanho das fontes e outras preferências visuais.
+
+### Passo 10 — Encerrar o acesso
+
+Ao terminar, utilize a opção de sair ou trocar de usuário, especialmente quando estiver utilizando um computador compartilhado.
+
+## 7. Instalação local para desenvolvedores
+
+As instruções a seguir apresentam uma forma básica de executar o projeto em um computador Windows utilizando o VS Code e o PowerShell.
+
+### Requisitos
+
+Antes de começar, instale:
+
+- Python compatível com as dependências do projeto.
+- Git.
+- Visual Studio Code ou outro editor de sua preferência.
+
+### 7.1. Clonar o repositório
+
+Abra um terminal e execute:
+
+```bash
+git clone https://github.com/Eduardo-Loures123/DashboardOS-2.0.git
+```
+
+Entre na pasta:
+
+```bash
+cd DashboardOS-2.0
+```
+
+### 7.2. Criar o ambiente virtual
+
+No PowerShell:
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-python -m flask --app app criar-admin
-python app.py
 ```
 
-Abra **http://127.0.0.1:5000** no navegador. O servidor escuta somente no computador local, sem debug. Para parar, pressione `Ctrl+C`. Se a ativação for bloqueada, utilize diretamente `.\.venv\Scripts\python.exe` em lugar de `python`; não é necessário alterar a política do Windows.
+Ative o ambiente:
 
-O comando `criar-admin` solicita ID e senha (com confirmação, sem exibir a senha). Use ID de 3 a 64 caracteres, com letras, números, ponto, hífen ou sublinhado, e senha com pelo menos 12 caracteres. Não há credenciais padrão. Execute o comando novamente com outro ID para cadastrar outro administrador. Não passe a senha como argumento no terminal.
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
 
-Em **http://127.0.0.1:5000/login**, informe o ID e a senha ou clique em **Modo visitante**. O visitante pode consultar, filtrar, pesquisar, ampliar gráficos e exportar relatórios; cadastro, edição e exclusão continuam visíveis e bloqueados, inclusive no servidor. Para trocar de conta ou sair, use as opções na parte inferior da barra lateral. **Trocar usuário** encerra a sessão e volta ao login; **Entrar no modo visitante** revoga a sessão administrativa. No modo visitante, **Fazer login** e **Voltar à tela inicial** encerram a sessão de leitura e abrem o login.
+### 7.3. Instalar as dependências
 
-Em **Configurações**, no rodapé da barra lateral, selecione tema **Claro**, **Escuro** ou **Automático**, fonte **Pequena**, **Padrão**, **Grande** ou **Muito grande**, densidade, formato numérico e redução de animações. O padrão aumenta discretamente as fontes menores em aproximadamente 10%. **Restaurar configurações visuais** restaura somente a aparência. Preferências ficam no localStorage, separadas por usuário; não contêm credenciais. Com o menu recolhido, a engrenagem permanece acessível na faixa lateral, assim como o único botão para expandir o menu.
+```powershell
+python -m pip install -r requirements.txt
+```
 
-A planilha `dados/dados_dashboard.xlsx` já acompanha o projeto. Se ela não existir, a primeira execução por `python app.py` a cria. Também é possível gerá-la manualmente:
+### 7.4. Preparar os dados
+
+O projeto utiliza uma planilha Excel como fonte de dados operacionais.
+
+Por motivos de segurança e privacidade, os arquivos de dados locais não são incluídos no repositório público.
+
+Para preparar um conjunto demonstrativo, utilize o script disponível no projeto:
 
 ```powershell
 python scripts/gerar_dados.py
 ```
 
-O gerador usa semente 42 e datas relativas ao dia da geração. Ele **recusa sobrescrever uma planilha existente**. Não há regeneração em inicializações posteriores. Para um novo conjunto demonstrativo, pare o servidor e mova a planilha atual para um local de segurança antes de executar o gerador.
+O gerador foi desenvolvido para criar dados fictícios e evitar a substituição de uma planilha existente.
 
-## Utilização
+Antes de executá-lo, confirme que não há informações importantes no destino utilizado pelo script.
 
-- Navegue pelas oito páginas no menu lateral. O botão de menu recolhe ou exibe a barra lateral.
-- Em Funcionários, Equipes, Ordens de Serviço, Acessos e Renovações, use **Novo registro** para cadastrar. Os códigos são gerados pelo servidor. Utilize **Ver**, **Editar** ou **Excluir** na linha desejada. Exclusões pedem confirmação e são bloqueadas quando há dependências.
-- Equipes precisam de um funcionário existente como responsável; novos funcionários precisam de uma equipe existente. O conjunto inicial fornece ambos. OS concluídas exigem data de conclusão válida; outras OS não podem ter conclusão preenchida.
-- Use **Filtros** para abrir os campos da página. **Aplicar filtros** atualiza os dados e **Limpar filtros** restaura a visão completa. Os filtros não são compartilhados entre páginas. Na visão geral, status, prioridade e período filtram as OS; equipe filtra as entidades relacionadas. Os vencimentos permanecem classificados mesmo quando o acesso está revogado; os alertas da visão geral contam somente acessos ativos.
-- Pesquise nas tabelas e clique nos cabeçalhos para ordenar. A paginação e a rolagem interna preservam todos os registros e colunas.
-- Clique em qualquer parte de um cartão de gráfico ou use Enter/Espaço para ampliar. Feche com ×, Escape ou clique fora. Gráficos mantêm tooltips, com zoom, pan e ferramentas desativados.
-- **Excel** exporta a página respeitando os filtros e a pesquisa. Em Relatórios, a exportação reúne os sete relatórios em abas. O seletor exibe uma análise de cada vez.
-- **Atualizar** relê o Excel e recalcula os valores. Os dados também são atualizados após alterações. Se editar a planilha externamente, preserve nomes das abas, colunas, códigos e relações; feche o Excel antes de salvar pela aplicação.
+### 7.5. Criar uma conta administrativa
 
-## Dados e regras
-
-As abas são `Funcionarios` (100), `Equipes` (10), `OrdensServico` (500), `Acessos` (500) e `Renovacoes` (150) no conjunto inicial. Nomes e e-mails são fictícios; o domínio example.com é reservado para exemplos. Equipes das OS e dos acessos são derivadas do funcionário para evitar vínculos divergentes.
-
-Vencimentos usam `date.today()` do Windows: negativo = vencido; zero = hoje; 1–30 = até 30 dias; 31–45; maior que 45. As categorias são exclusivas. No indicador compacto “Até 30 dias”, hoje está incluído. Renovações pendentes são todas que ainda não estão concluídas ou rejeitadas. Aprovar ou concluir uma renovação não altera automaticamente a validade do acesso; a nova validade deve ser registrada explicitamente em Acessos.
-
-Cada gravação bloqueia leitura e escrita por arquivo `.lock`, valida todo o conjunto, cria backup e escreve um Excel temporário antes da substituição atômica. Há espera de até dez segundos para outro processo terminar. Nenhuma relação é removida em cascata. Se o processo for encerrado à força e restar um `.lock`, pare todas as instâncias antes de removê-lo. O bloqueio protege processos da aplicação nesta máquina; não coordena o Microsoft Excel ou alterações do OneDrive. Evite executar várias máquinas sobre uma pasta sincronizada.
-
-Backups ficam em `dados/backups/`, sem exclusão automática. Para restaurar, pare o servidor, preserve a planilha atual e copie o backup desejado para `dados/dados_dashboard.xlsx`. Os dados são locais e não são enviados a serviços externos. O Plotly.js está incluído em `static/js/plotly.min.js` com seu cabeçalho de licença MIT; os gráficos funcionam offline.
-
-## Arquitetura
-
-`app.py` concentra rotas HTML, API JSON, autenticação e exportação. `services/schema.py` define campos; `excel_service.py` implementa transações e validações; `dashboard_service.py` realiza enriquecimento, filtros e indicadores. `auth_service.py` guarda hashes de senha e sessões revogáveis em `instance/auth.sqlite3`, com segredo local em `instance/session.key`, separados do Excel e fora da pasta pública. Serviços específicos oferecem consultas reutilizáveis. Templates compartilham o layout e os componentes JavaScript/CSS. Uma implantação futura precisará de HTTPS, cookie Secure, servidor WSGI e armazenamento apropriado à concorrência; nesta etapa o servidor continua somente em 127.0.0.1.
-
-`static/css/reference.css` contém os ajustes de proporção realizados após o recebimento da imagem. `icons.js` fornece ícones SVG locais consistentes. O calendário ao lado do gráfico de área destaca as previsões de conclusão das OS em aberto, respeitando os filtros; o dia atual fica laranja. Ele não representa valores demonstrativos fixos.
-
-## Verificação
+O projeto disponibiliza um comando para criação de administradores:
 
 ```powershell
-python -m unittest discover -s tests -t . -v
+python -m flask --app app criar-admin
 ```
 
-Nesta máquina foi detectado `Lib/unittest/main.py` vazio na instalação do Python. Para executar a mesma suíte sem alterar a instalação, use `python scripts/testar.py`. O executor utiliza os componentes padrão de carregamento, asserções e execução do unittest e contorna apenas sua entrada de linha de comando quando esse arquivo está vazio.
+Siga as instruções exibidas no terminal para cadastrar as credenciais.
 
-Os testes usam cópias temporárias da planilha existente: não alteram os dados entregues. Cobrem geração isolada e relações, limites de vencimento, indicadores, filtros, CRUD nas cinco tabelas, concorrência, backups, persistência, navegação HTTP, relatórios, exportação e proteção CSRF. Há também testes de eventos JavaScript em jsdom; instruções e limites estão no relatório de estabilização. Isto não substitui testes visuais no navegador.
+Não utilize senhas simples ou compartilhadas.
 
-Revisão manual necessária: abrir cada página em 1920×1080, 1600×900, 1366×768 e 1280×720; verificar altura sem rolagem do documento, rolagem interna das tabelas, tooltips, abertura pelo espaço vazio dos cartões, fechar por Escape/clique externo, foco do teclado e adaptação no celular. O controle de navegador estava indisponível na sessão de desenvolvimento, portanto esses resultados não são apresentados como validados.
+### 7.6. Iniciar a aplicação
 
-## Preparação para AWS
+Execute:
 
-Consulte [deployment/aws/DEPLOY_AWS.md](deployment/aws/DEPLOY_AWS.md) para diagnóstico, configuração de produção, comandos Windows/Linux, HTTPS, backups e atualização. Nenhuma implantação AWS foi executada.
+```powershell
+python app.py
+```
+
+Depois, abra no navegador:
+
+```text
+http://127.0.0.1:5000
+```
+
+O endereço acima é destinado à execução local.
+
+**Observação:** as configurações necessárias para executar a aplicação podem variar conforme o ambiente. Para implantação em produção, consulte também a documentação disponível em `deployment/aws/`.
+
+## 8. Dados utilizados
+
+O DashboardOS trabalha com informações relacionadas a:
+
+- Funcionários.
+- Equipes.
+- Ordens de serviço.
+- Acessos.
+- Renovações.
+
+O projeto inclui um gerador de dados fictícios para demonstrações e testes.
+
+Os conjuntos demonstrativos permitem conhecer a aplicação sem depender de informações reais de uma organização.
+
+Os dados de produção, bancos locais, arquivos de configuração privados e credenciais não fazem parte do repositório público.
+
+## 9. Organização do projeto
+
+A estrutura principal do repositório está organizada da seguinte forma:
+
+```text
+DashboardOS-2.0/
+│
+├── app.py
+├── requirements.txt
+├── package.json
+├── README.md
+│
+├── services/
+│   └── Regras de negócio e serviços da aplicação
+│
+├── templates/
+│   └── Páginas HTML
+│
+├── static/
+│   ├── css/
+│   └── js/
+│
+├── scripts/
+│   └── Scripts auxiliares e geração de dados
+│
+├── tests/
+│   └── Testes automatizados
+│
+└── deployment/
+    └── aws/
+        └── Configurações e documentação de implantação
+```
+
+Essa organização facilita a localização dos arquivos e permite desenvolver novas funcionalidades sem concentrar todo o código em um único lugar.
+
+## 10. Testes e qualidade
+
+O projeto possui testes voltados para diferentes partes da aplicação, incluindo autenticação, indicadores, regras de negócio, rotas e componentes da interface.
+
+Os testes ajudam a identificar problemas após alterações no código e reduzem o risco de comprometer funcionalidades já existentes.
+
+Para executar os testes Python, com as dependências de desenvolvimento necessárias instaladas:
+
+```powershell
+python -m pytest
+```
+
+A presença dos testes não significa que o sistema esteja livre de falhas. A validação contínua faz parte do processo de evolução do projeto.
+
+## 11. Hospedagem e implantação
+
+O DashboardOS 2.0 também foi preparado para execução em um servidor AWS EC2.
+
+A configuração de produção utiliza Gunicorn para executar a aplicação Flask e Nginx para receber e encaminhar as requisições.
+
+O ambiente de hospedagem conta com acesso HTTPS e separação entre o código da aplicação e os arquivos privados utilizados pelo sistema.
+
+A documentação técnica da implantação está disponível na pasta:
+
+```text
+deployment/aws/
+```
+
+**Importante:** publicar uma nova versão no GitHub não atualiza automaticamente a aplicação hospedada na AWS. As alterações devem ser testadas e implantadas no servidor por meio de um processo separado.
+
+## 12. Evolução do projeto
+
+O DashboardOS 2.0 não é considerado um produto encerrado. O repositório será utilizado para registrar novas versões, melhorias e correções ao longo do desenvolvimento.
+
+A versão atual estabelece uma base para continuar evoluindo o sistema.
+
+### Possibilidades para próximas versões
+
+As seguintes ideias representam oportunidades de desenvolvimento e ainda não devem ser consideradas funcionalidades implementadas:
+
+- Aperfeiçoamento dos alertas de vencimento.
+- Notificações automáticas por e-mail.
+- Novas opções de personalização da interface.
+- Indicadores e relatórios adicionais.
+- Melhorias na experiência de uso em dispositivos móveis.
+- Novas formas de integração e atualização dos dados.
+- Aprimoramento dos mecanismos de segurança.
+- Automatização de testes e implantação.
+- Melhorias de desempenho e manutenção.
+
+As próximas versões poderão incluir outras funcionalidades conforme as necessidades identificadas durante o desenvolvimento e os testes.
+
+### Histórico de versões
+
+**Versão 2.0 — Base atual publicada**
+
+- Organização do sistema web em diferentes módulos.
+- Gerenciamento de informações operacionais.
+- Dashboard com indicadores e gráficos.
+- Autenticação e modo visitante.
+- Configurações de aparência.
+- Recursos de pesquisa, filtros e relatórios.
+- Preparação para implantação em produção.
+- Publicação do código no GitHub.
+
+As alterações futuras serão documentadas por meio dos commits e das versões do repositório.
+
+## 13. Sobre o desenvolvimento
+
+O DashboardOS 2.0 é um projeto de desenvolvimento de software criado como parte do aprendizado e da prática de tecnologias utilizadas no mercado de TI.
+
+Seu desenvolvimento envolve não apenas programação, mas também organização de dados, experiência do usuário, testes, versionamento, segurança e hospedagem de aplicações web.
+
+O objetivo é continuar aprimorando o sistema, aplicando novos conhecimentos e desenvolvendo soluções cada vez mais completas.
+
+**Desenvolvedor:** Eduardo Loures
+
+**Repositório:** https://github.com/Eduardo-Loures123/DashboardOS-2.0
+
+---
+
+*Projeto em evolução. Novas versões, correções e funcionalidades poderão ser adicionadas futuramente.*
