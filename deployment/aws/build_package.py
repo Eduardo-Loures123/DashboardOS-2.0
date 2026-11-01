@@ -12,11 +12,12 @@ DEPLOYMENT = {
     'gunicorn.conf.py', 'nginx.conf', 'dashboardos.service',
     'install.sh', 'deploy.sh', 'update.sh', 'backup.sh', 'backup.py',
     'check.sh', 'DEPLOY_AWS.md', 'RELATORIO_TRANSFERENCIA.md', 'build_package.py',
+    'dashboardos-alerts.service', 'dashboardos-alerts.timer',
 }
 
 
 def selected_files():
-    files = [ROOT/'app.py', ROOT/'requirements.txt']
+    files = [ROOT/'app.py', ROOT/'requirements.txt', ROOT/'NEXT_OPERATIONS.md', ROOT/'CHANGELOG.md']
     for folder, extensions in DIRECTORIES.items():
         for path in sorted((ROOT/folder).rglob('*')):
             if path.is_file() and path.suffix in extensions and '__pycache__' not in path.parts:

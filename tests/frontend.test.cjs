@@ -7,7 +7,38 @@ const vm=require('node:vm');
 const {JSDOM,VirtualConsole}=require('jsdom');
 const root=path.resolve(__dirname,'..');
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-const scripts=['preferences.js','icons.js','modals.js','charts.js','filters.js','dashboard.js','app.js','settings.js'];
+const scripts=['preferences.js','icons.js','modals.js','charts.js','filters.js','dashboard.js','app.js','settings.js','enterprise.js'];
+
+test('perfil: salvar preferências, validar confirmação de senha e abrir central',async t=>{
+ const h=await setup(t,'perfil'),doc=h.doc;
+ assert.ok(doc.querySelector('a.avatar[href="/perfil"]'));
+ assert.equal(doc.querySelector('.toolbar').hidden,true);
+ const form=doc.querySelector('#account-content form');assert.ok(form);
+ form.elements.display_name.value='Nome atualizado';
+ form.elements.theme.value='dark';form.dispatchEvent(new h.w.Event('submit',{bubbles:true,cancelable:true}));await h.flush();
+ const request=h.requests.find(r=>r.url==='/api/profile'&&r.method==='PUT');
+ assert.equal(JSON.parse(request.body).display_name,'Nome atualizado');
+ assert.equal(doc.documentElement.dataset.theme,'dark');
+ const current=doc.querySelector('#account-content form');current.elements.password.value='nova-senha-longa';
+ current.dispatchEvent(new h.w.Event('submit',{bubbles:true,cancelable:true}));await h.flush();
+ assert.match(current.querySelector('.form-error').textContent,/não coincidem/);
+ h.click('#notifications-button');await h.flush();assert.equal(doc.querySelector('#modal').open,true);
+ assert.match(doc.querySelector('#modal-body').textContent,/Nenhuma notificação/);
+});
+
+test('administração: criar conta e exigir prévia antes de publicar comunicado',async t=>{
+ const h=await setup(t,'administracao'),doc=h.doc;
+ doc.querySelector('#account-content button').click();await h.flush();
+ assert.ok(doc.querySelector('#modal [name="role"]'));
+ await h.close();
+ const form=doc.querySelector('#announcement-content form');form.elements.title.value='Aviso';form.elements.message.value='<script>texto</script>';
+ form.dispatchEvent(new h.w.Event('submit',{cancelable:true,bubbles:true}));await h.flush();
+ assert.equal(h.requests.filter(r=>r.url==='/api/admin/announcements'&&r.method==='POST').length,0);
+ assert.equal(doc.querySelector('#modal-body script'),null);
+ assert.match(doc.querySelector('#modal-body').textContent,/<script>texto/);
+ doc.querySelector('#modal-body button').click();await h.flush();
+ const request=h.requests.find(r=>r.url==='/api/admin/announcements'&&r.method==='POST');assert.equal(JSON.parse(request.body).confirmed,true);
+});
 
 async function setup(t,page,options={}){
  const fixture=page+(options.guest?'-guest':'');
@@ -44,6 +75,14 @@ async function setup(t,page,options={}){
  w.fetch=async(url,config={})=>{
   requests.push({url:String(url),...config});
   if(harness.networkError)throw Error('offline');
+  if(String(url).startsWith('/api/notifications'))return result({notifications:[],unread:0,message:'Central atualizada.'});
+  if(String(url)==='/api/profile'){
+   if(config.method==='PUT'){Object.assign(data.profile,JSON.parse(config.body));return result({message:'Perfil atualizado.'});}
+   return result(data.profile);
+  }
+  if(String(url).startsWith('/api/admin/users'))return result({users:data.users||[],message:'Conta atualizada.'});
+  if(String(url)==='/api/admin/audit')return result({audit:[]});
+  if(String(url)==='/api/admin/announcements')return result({announcements:[],message:'Comunicado publicado.'});
   if(String(url).startsWith('/api/export/'))return harness.exportFailure?result({error:'Falha de exportação'},503):result({});
   if(String(url).startsWith('/api/data/')){await initialGate;return result(data);}
   if(String(url).startsWith('/api/records/')){
@@ -141,7 +180,12 @@ test('gráficos: cartão vazio, teclado, dimensões, reabertura, Escape e clique
  for(const key of ['teams','trend','donut']){
   const card=doc.querySelector('[data-chart="'+key+'"]');card.focus();card.click();await h.flush();
   assert.equal(doc.querySelector('#modal').open,true);
-  const spec=h.data.charts[key];assert.deepEqual(h.plots.at(-1).traces,spec.data);
+  const spec=h.data.charts[key],rendered=h.plots.at(-1);
+  assert.deepEqual(rendered.traces.map(({hovertemplate,...trace})=>trace),spec.data);
+  assert.equal(rendered.layout.showlegend,true);
+  assert.equal(rendered.layout.xaxis.spikedash,'solid');
+  assert.ok(rendered.layout.hoverlabel.font.size>=14);
+  assert.ok(rendered.traces.every(trace=>trace.hovertemplate.includes('%{')));
   doc.querySelector('#modal').dispatchEvent(new h.w.Event('cancel',{cancelable:true}));await h.flush();
   assert.equal(doc.querySelector('#modal').open,false);assert.equal(doc.activeElement,card);
   card.dispatchEvent(new h.w.KeyboardEvent('keydown',{key:'Enter',bubbles:true}));await h.flush();await h.close();

@@ -32,7 +32,7 @@ def create_app(path=None,auth_directory=None):
             token=request.headers.get('X-CSRF-Token') or request.form.get('csrf_token','')
             if not secrets.compare_digest(token,session['csrf']):return jsonify(error='Sessão inválida. Atualize a página.'),403
         if request.endpoint in ['static','login','guest','logout']:return
-        if request.path.startswith('/api/records/') and (not g.user or g.user['role']!='admin'):
+        if request.path.startswith('/api/records/') and (not g.user or g.user['role'] not in ('admin','superadmin')):
             return jsonify(error='Disponível apenas para administradores.'),403
         if not g.user:
             if request.path.startswith('/api/'):return jsonify(error='Faça login ou entre no modo visitante.',login_url='/login'),401
@@ -152,12 +152,13 @@ def create_app(path=None,auth_directory=None):
                 frame.to_excel(writer,sheet_name=name[:31],index=False)
         output.seek(0)
         return send_file(output,as_attachment=True,download_name=page+'.xlsx',mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    from services.enterprise_routes import register
+    register(app,auth,store,PAGES)
     return app
 
 app=create_app()
 if __name__=='__main__':
     if app.config['PRODUCTION']:raise RuntimeError('Use Gunicorn em produção.')
-    if not (ROOT/'dados/dados_dashboard.xlsx').exists():
-        from scripts.gerar_dados import gerar
-        gerar(ROOT/'dados/dados_dashboard.xlsx')
+    if not app.config['EXCEL_PATH'].exists():
+        raise RuntimeError('Planilha ausente. Configure DASHBOARD_EXCEL_PATH com seus dados existentes.')
     app.run(host='127.0.0.1',port=int(os.environ.get('PORT','5000')),debug=False)

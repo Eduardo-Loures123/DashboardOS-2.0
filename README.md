@@ -1,5 +1,9 @@
 # DashboardOS 2.0
 
+> **Atualização Next disponível nesta branch, ainda não publicada.** Inclui perfis de acesso, administração de contas, perfil funcional, notificações persistentes, comunicados, worker de vencimentos, outbox de e-mail desativada por padrão e componentes visuais compartilhados. Leia [plano e arquitetura](NEXT_PLAN.md), [configuração, migração, testes e rollback](NEXT_OPERATIONS.md) e [changelog](CHANGELOG.md). Contas reais não foram migradas/promovidas. A ativação exige migração com backup e confirmação; SMTP real e homologação visual/Linux permanecem pendentes.
+
+Validação desta entrega: **41 testes Python e 36 testes DOM aprovados**. Consulte [resultados e pendências de homologação](NEXT_VALIDATION.md).
+
 **Sistema web para gerenciamento de ordens de serviço, funcionários, equipes, acessos e renovações.**
 
 O DashboardOS 2.0 é um projeto desenvolvido para facilitar o acompanhamento de informações operacionais por meio de uma interface organizada, com indicadores, gráficos, tabelas e ferramentas de consulta.
@@ -120,6 +124,8 @@ As preferências de aparência são mantidas separadamente dos dados operacionai
 O DashboardOS 2.0 possui uma tela de autenticação e diferentes possibilidades de utilização.
 
 ### Acesso administrativo
+
+Na atualização Next, superadministradores gerenciam contas/comunicados/auditoria; administradores mantêm o CRUD operacional; usuários têm leitura e perfil próprio; visitantes continuam restritos à consulta. A permissão é validada no servidor. Consulte os comandos de migração/promoção no guia Next antes de ativar o gerenciamento de contas.
 
 Destinado aos usuários autorizados a gerenciar as informações.
 
@@ -350,6 +356,8 @@ Para executar os testes Python, com as dependências de desenvolvimento necessá
 python -m pytest
 ```
 
+Nesta branch, o comando validado para a suíte Python é `python scripts/testar.py`. Para a interface: `python scripts/preparar_testes_frontend.py` e `node --test --test-isolation=none tests/frontend.test.cjs`. Os testes usam cópias dos dados e envio simulado, sem SMTP real. A validação DOM não substitui homologação visual em navegador.
+
 A presença dos testes não significa que o sistema esteja livre de falhas. A validação contínua faz parte do processo de evolução do projeto.
 
 ## 11. Hospedagem e implantação
@@ -375,6 +383,8 @@ O DashboardOS 2.0 não é considerado um produto encerrado. O repositório será
 A versão atual estabelece uma base para continuar evoluindo o sistema.
 
 ### Possibilidades para próximas versões
+
+Os alertas, a outbox de e-mail, a administração e o perfil descritos no guia Next já têm implementação nesta branch; configuração/ativação reais e homologação permanecem separadas. A lista histórica abaixo descreve oportunidades da versão 2.0 base.
 
 As seguintes ideias representam oportunidades de desenvolvimento e ainda não devem ser consideradas funcionalidades implementadas:
 

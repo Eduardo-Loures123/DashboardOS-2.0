@@ -1,5 +1,7 @@
 const page=document.body.dataset.page;let state={},currentPage=1,pageSize=10,sortKey='codigo',sortDirection=1,searchTerm='',loadSequence=0,dataReady=false;
-function canWrite(){return document.body.dataset.role==='admin';}
+searchTerm=new URLSearchParams(location.search).get('q')||'';
+if(document.querySelector('#search'))document.querySelector('#search').value=searchTerm;
+function canWrite(){return ['admin','superadmin'].includes(document.body.dataset.role);}
 function setDataReady(ready){dataReady=ready;for(const id of ['filters-button','export','new','search','page-size','report-download']){const control=document.getElementById(id);if(control){control.disabled=!ready||(id==='new'&&!canWrite());if(id==='new')control.title=canWrite()?'Novo registro':'Disponível apenas para administradores';}}}
 setDataReady(false);
 document.querySelector('#today').textContent=new Date().toLocaleDateString('pt-BR',{day:'numeric',month:'long',year:'numeric'});
@@ -43,4 +45,4 @@ function editRecord(row=null){
  openModal(row?'Editar · '+row.codigo:'Novo registro',form);
 }
 function deleteRecord(row){if(!canWrite())return;const body=el('div'),text=el('p',{text:'Excluir '+row.codigo+'? Esta ação será bloqueada se houver registros relacionados. Uma cópia de segurança será preservada.'}),error=el('p',{class:'form-error',role:'alert'}),actions=el('div',{class:'form-actions'}),cancel=el('button',{class:'button secondary',text:'Cancelar'}),confirm=el('button',{class:'button danger',text:'Confirmar exclusão'});cancel.onclick=closeModal;confirm.onclick=async()=>{confirm.disabled=true;try{await api('/api/records/'+state.sheet+'/'+row.codigo,{method:'DELETE'});closeModal();toast('Registro excluído.');await loadData();}catch(err){error.textContent=err.message;}finally{confirm.disabled=false;}};actions.append(cancel,confirm);body.append(text,error,actions);openModal('Confirmar exclusão',body);}
-loadData();
+if(!['perfil','administracao'].includes(page))loadData();

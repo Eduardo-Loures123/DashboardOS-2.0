@@ -1,0 +1,7 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="account-layout" aria-label="Conta e preferências">
+ <article class="panel account-panel"><p class="eyebrow">{{'CONTROLE DE ACESSO' if page=='administracao' else 'SUA CONTA'}}</p><h2>{{'Pessoas e permissões' if page=='administracao' else 'Identidade e segurança'}}</h2><p class="muted">{{'Gerencie contas, publique comunicados e consulte a auditoria.' if page=='administracao' else 'Mantenha seus dados e suas preferências atualizados.'}}</p><div id="account-content" aria-live="polite">Carregando…</div></article>
+ {% if page=='administracao' %}<article class="panel account-panel"><h2>Comunicados internos</h2><div id="announcement-content"></div><h2>Histórico e auditoria</h2><div id="admin-history"></div></article>{% endif %}
+</section>
+{% endblock %}

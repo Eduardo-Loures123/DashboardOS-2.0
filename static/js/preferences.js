@@ -9,7 +9,7 @@ window.DashboardPreferences=(()=>{
  const systemMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)');
  let values={...defaults};
  function validate(data){const clean={...defaults};for(const field of Object.keys(allowed))if(allowed[field].includes(data?.[field]))clean[field]=data[field];if(typeof data?.reduceMotion==='boolean')clean.reduceMotion=data.reduceMotion;return clean;}
- try{values=validate(JSON.parse(localStorage.getItem(key)||'null'));}catch{}
+ try{values=validate(JSON.parse(localStorage.getItem(key)||root.dataset.accountAppearance||'null'));}catch{}
  function apply(notify=true){
   root.dataset.theme=values.theme==='auto'?(systemTheme?.matches?'dark':'light'):values.theme;
   root.dataset.font=values.font;root.dataset.density=values.density;

@@ -24,6 +24,13 @@ systemctl enable dashboardos
 systemctl restart dashboardos
 if ! bash "$release/deployment/aws/check.sh"; then
     if [[ -n "$previous" ]]; then
+        # Legacy code treats every account as admin and ignores blocked state.
+        # Never reopen it automatically after a Next release/migration.
+        if [[ -f "$release/services/enterprise_service.py" && ! -f "$previous/services/enterprise_service.py" ]]; then
+            systemctl stop dashboardos
+            echo "Falha na verificação. Rollback legado exige restauração/revisão das contas; consulte NEXT_OPERATIONS.md." >&2
+            exit 1
+        fi
         ln -s "$previous" /opt/dashboardos/current.rollback
         mv -Tf /opt/dashboardos/current.rollback /opt/dashboardos/current
         systemctl restart dashboardos

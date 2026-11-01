@@ -1,12 +1,12 @@
 from pathlib import Path
 from contextlib import contextmanager
 from datetime import datetime, date
-import os, shutil, time, uuid
+import os, shutil, time, uuid, logging
 import pandas as pd
 from .schema import SCHEMA, PREFIX, STATUS
 
 class ExcelService:
-    def __init__(self,path): self.path=Path(path)
+    def __init__(self,path): self.path=Path(path); self.observer=None
     @contextmanager
     def lock(self):
         lock=Path(str(self.path)+'.lock'); deadline=time.monotonic()+10
@@ -56,6 +56,7 @@ class ExcelService:
     def mutate(self,sheet,record=None,code=None,delete=False):
         with self.lock():
             data=self._read(); rows=data[sheet]
+            before={name:[dict(row) for row in records] for name,records in data.items()} if self.observer else None
             if code and not any(r['codigo']==code for r in rows): raise ValueError('Registro não encontrado.')
             if delete: data[sheet]=[r for r in rows if r['codigo']!=code]
             else:
@@ -67,6 +68,7 @@ class ExcelService:
                 data[sheet]=[clean if r['codigo']==code else r for r in rows]
                 if not any(r['codigo']==code for r in rows): data[sheet].append(clean)
             self.validate(data)
+            if self.observer:self.observer(before)
             backup=self.path.parent/'backups'; backup.mkdir(exist_ok=True)
             shutil.copy2(self.path,backup/(datetime.now().strftime('%Y%m%d_%H%M%S_%f')+'.xlsx'))
             temp=self.path.with_name(uuid.uuid4().hex+'.tmp.xlsx')
@@ -79,6 +81,13 @@ class ExcelService:
                             for cell in cells:
                                 if isinstance(cell.value,str):cell.data_type='s'
                 os.replace(temp,self.path)
+                if self.observer:
+                    try:self.observer(data)
+                    except Exception:
+                        # Excel commit already succeeded. Do not invite a duplicate
+                        # create by reporting the operation as failed. Worker recovers
+                        # pending transitions from the last durable snapshot.
+                        logging.getLogger(__name__).exception('Falha ao registrar alertas após salvar; worker deve reconciliar.')
             except PermissionError: raise ValueError('Feche a planilha no Excel antes de salvar.')
             finally: temp.unlink(missing_ok=True)
             return code
