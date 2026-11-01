@@ -1,0 +1,26 @@
+[Unit]
+Description=DashboardOS Gunicorn
+After=network.target
+
+[Service]
+Type=simple
+User=dashboardos
+Group=www-data
+WorkingDirectory=/opt/dashboardos/current
+EnvironmentFile=/etc/dashboardos/dashboardos.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/dashboardos/current/.venv/bin/gunicorn -c deployment/aws/gunicorn.conf.py app:app
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=135
+RuntimeDirectory=dashboardos
+RuntimeDirectoryMode=0750
+UMask=0007
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/dashboardos
+
+[Install]
+WantedBy=multi-user.target
