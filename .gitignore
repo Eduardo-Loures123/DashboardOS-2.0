@@ -13,3 +13,37 @@ instance/
 *.key
 *.pem
 *.xlsx
+
+# Private migration evidence and isolated visual previews
+diagnosticos/
+
+# Publication safety: runtime configuration and private local artifacts
+.env.*
+!.env.example
+*.env
+!*.env.example
+.aws/
+credentials
+credentials.json
+*.p12
+*.pfx
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+*.xls
+*.xlsm
+*.xlsb
+*.csv
+*.tsv
+*.log
+*.bak
+*.backup
+*.tar
+*.tar.gz
+*.zip
+/dados/
+/backups/
+/backups_locais/
+tests/*-protected-before.json
+tests/*-protected-after.json

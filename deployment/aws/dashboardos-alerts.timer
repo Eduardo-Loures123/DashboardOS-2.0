@@ -1,0 +1,11 @@
+[Unit]
+Description=Scan DashboardOS deadlines every minute
+
+[Timer]
+OnBootSec=60
+OnUnitInactiveSec=60
+Persistent=true
+Unit=dashboardos-alerts.service
+
+[Install]
+WantedBy=timers.target

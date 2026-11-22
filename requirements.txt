@@ -4,4 +4,5 @@ pandas>=2.2,<4
 openpyxl>=3.1,<4
 plotly>=6,<8
 Click>=8.1,<9
+Pillow>=12,<13
 gunicorn>=23,<24; sys_platform == "linux"

@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="panel help-content" aria-label="Ajuda e suporte">
+ <h2><span data-icon="info"></span>Central de Ajuda</h2>
+ <p>Orientações para usar os módulos disponíveis no seu DashboardOS.</p>
+ <label class="search"><span data-icon="search"></span><input id="help-search" type="search" placeholder="Buscar orientação…" aria-label="Buscar na ajuda"></label>
+ <article data-help><h2>Como consultar e cadastrar registros?</h2><p>Abra Funcionários, Equipes, Ordens de Serviço ou Acessos pelo menu. Utilize a pesquisa e os filtros para localizar registros. Administradores podem cadastrar, editar e excluir quando permitido pelas regras do sistema.</p></article>
+ <article data-help><h2>Como acompanhar os vencimentos e renovações?</h2><p>Abra Acompanhamento no menu e selecione Vencimentos ou Renovações. As datas e os estados são calculados a partir dos registros existentes.</p></article>
+ <article data-help><h2>Onde alterar minhas preferências?</h2><p>Em Meu perfil, abra Preferências para ajustar tema, fonte, densidade, exibição dos números e movimento reduzido. As opções visuais são salvas neste navegador, separadamente por usuário.</p></article>
+ <article data-help><h2>Como funciona o modo visitante?</h2><p>O modo visitante permite somente leitura. Para alterar registros ou acessar sua conta, faça login com uma conta autorizada.</p></article>
+ <article data-help><h2>Precisa de suporte?</h2><p>Para dúvidas sobre acesso, permissões ou dados, entre em contato com o administrador responsável pelo seu DashboardOS.</p></article>
+ <p id="help-empty" hidden>Nenhuma orientação encontrada. Experimente outro termo.</p>
+</section>
+<script src="/static/js/help.js" defer></script>
+{% endblock %}

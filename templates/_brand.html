@@ -1,0 +1,3 @@
+{% macro logo(workspace=false) -%}
+<span class="brand-lockup"><img class="brand-symbol" src="/static/brand/dashboardos-transparent.svg" alt="" width="39" height="39"><span class="brand-wordmark">DashboardOS</span></span>{% if workspace %}<small>WORKSPACE / {{app_version}}</small>{% endif %}
+{%- endmacro %}

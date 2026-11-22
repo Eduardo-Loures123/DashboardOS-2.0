@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 240" fill="none">
+<defs>
+ <linearGradient id="rear" x1="460" y1="240" x2="1190" y2="18" gradientUnits="userSpaceOnUse"><stop stop-color="#b9dcff" stop-opacity="0"/><stop offset=".42" stop-color="#b9dcff" stop-opacity=".65"/><stop offset="1" stop-color="#3c96fa"/></linearGradient>
+ <linearGradient id="sweep" x1="680" y1="240" x2="1135" y2="65" gradientUnits="userSpaceOnUse"><stop stop-color="#b9dcff" stop-opacity=".12"/><stop offset="1" stop-color="#3c96fa"/></linearGradient>
+ <linearGradient id="front" x1="340" y1="210" x2="1190" y2="190" gradientUnits="userSpaceOnUse"><stop stop-color="#70b8ff" stop-opacity="0"/><stop offset=".5" stop-color="#70b8ff" stop-opacity=".5"/><stop offset="1" stop-color="#3c96fa"/></linearGradient>
+</defs>
+<path d="M325 240C500 240 562 175 711 174C867 173 968 222 1200 100V240Z" fill="url(#rear)" opacity="0.52"/>
+<path d="M535 240C690 239 764 177 880 112C1006 42 1112 21 1200 28V240Z" fill="url(#sweep)" opacity="0.48"/>
+<path d="M697 240C838 220 894 162 987 89C1069 25 1141 16 1200 0V240Z" fill="url(#rear)" opacity="0.34"/>
+<path d="M301 240C497 238 599 174 727 172C888 169 1005 236 1200 133V240Z" fill="url(#front)" opacity=".46"/>
+<path d="M535 239C690 238 764 177 880 112C1006 42 1112 21 1200 28" stroke="#eff7ff" stroke-opacity=".55" stroke-width="1"/>
+<path d="M698 239C838 220 894 162 987 89C1069 25 1141 16 1200 0" stroke="#eff7ff" stroke-opacity=".3" stroke-width=".7"/>
+</svg>

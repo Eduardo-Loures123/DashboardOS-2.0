@@ -1,6 +1,13 @@
 from datetime import date
 from collections import Counter
 
+def overview(data):
+    urgent=[r for r in data['OrdensServico'] if r.get('prioridade') in ('Alta','Crítica') and r['status']!='Concluída']
+    dates=sorted(r['concessao'] for r in data['Acessos'] if r.get('concessao'))
+    return {'urgent':sorted(urgent,key=lambda r:(r.get('previsao') or '9999',r['codigo'])),
+            'access_total':len(data['Acessos']),'access_period':{'start':dates[0] if dates else None,'end':dates[-1] if dates else None},
+            'access_teams':sorted([{'code':t['codigo'],'name':t['nome'],'value':sum(r.get('equipe')==t['codigo'] for r in data['Acessos'])} for t in data['Equipes']],key=lambda r:(-r['value'],r['code']))}
+
 def categoria(dias):
     if dias<0:return 'Vencidos'
     if dias==0:return 'Vencem hoje'
@@ -16,8 +23,9 @@ def enrich(data,hoje=None):
             person=people.get(row.get('funcionario',access.get(row.get('acesso'),{}).get('funcionario')), {})
             row['equipe']=person.get('equipe',''); row['nome_funcionario']=person.get('nome','')
             if sheet=='Acessos':
-                row['dias']=(date.fromisoformat(row['vencimento'])-hoje).days
-                row['situacao']=categoria(row['dias'])
+                try:row['dias']=(date.fromisoformat(row.get('vencimento',''))-hoje).days
+                except (ValueError,TypeError):row['dias']=None
+                row['situacao']='Sem prazo válido' if row['dias'] is None else categoria(row['dias'])
     for row in result['Equipes']:
         for key,sheet in [('quantidade_funcionarios','Funcionarios'),('quantidade_os','OrdensServico'),('quantidade_acessos','Acessos')]: row[key]=sum(r.get('equipe')==row['codigo'] for r in result[sheet])
     return result
@@ -38,13 +46,15 @@ def filtered(rows,filters,date_field=None,lookups=None):
                 elif len(text)==10 and text[:4].isdigit() and text[4:5]=='-' and text[7:8]=='-':
                     text=text[8:10]+'/'+text[5:7]+'/'+text[:4]
                 values.append(text)
+                if key=='situacao':
+                    values.append({'Vencidos':'Vencido','Vencem hoje':'Urgente','Até 30 dias':'Urgente','31 a 45 dias':'Atenção','Após 45 dias':'Dentro do prazo'}.get(text,text))
             if not any(filters['q'].casefold() in value.casefold() for value in values):continue
         if date_field and ((filters.get('inicio') and row.get(date_field,'')<filters['inicio']) or (filters.get('fim') and row.get(date_field,'')>filters['fim'])):continue
         result.append(row)
     return result
 
 def summary(data):
-    os=data['OrdensServico']; ac=[r for r in data['Acessos'] if r['status']=='Ativo']; ren=data['Renovacoes']
+    os=data['OrdensServico']; ac=[r for r in data['Acessos'] if r['status']=='Ativo' and isinstance(r.get('dias'),int)]; ren=data['Renovacoes']
     counts=Counter(r['status'] for r in os)
     indicators={'Funcionários':len(data['Funcionarios']),'Equipes':len(data['Equipes']),'Ordens de serviço':len(os),'Concluídas':counts['Concluída'],'Pendentes':counts['Pendente'],'Em andamento':counts['Em andamento'],'Acessos':len(data['Acessos']),'Vencidos':sum(r['dias']<0 for r in ac),'Até 30 dias':sum(0<=r['dias']<=30 for r in ac),'31 a 45 dias':sum(31<=r['dias']<=45 for r in ac),'Renovações pendentes':sum(r['status'] not in ['Concluída','Rejeitada'] for r in ren)}
     teams=[r['codigo'] for r in data['Equipes']]
@@ -53,4 +63,12 @@ def summary(data):
       'teams':{'title':'Ordens de serviço por equipe','data':[{'type':'bar','name':status,'x':teams,'y':[sum(r['equipe']==t and r['status']==status for r in os) for t in teams],'marker':{'color':color}} for status,color in [('Concluída','#12395B'),('Pendente','#FF9F0A'),('Em andamento','#90A9BF')]]},
       'trend':{'title':'Evolução das ordens de serviço','data':[{'type':'scatter','mode':'lines','fill':'tozeroy','name':status,'x':months,'y':[sum(r['abertura'].startswith(m) and r['status']==status for r in os) for m in months],'line':{'color':color,'shape':'spline'}} for status,color in [('Concluída','#12395B'),('Pendente','#FF9F0A')]]},
       'donut':{'title':'Situação das ordens','data':[{'type':'pie','hole':.78,'labels':['Concluída','Pendente','Em andamento'],'values':[counts[s] for s in ['Concluída','Pendente','Em andamento']],'marker':{'colors':['#12395B','#FF9F0A','#DCE5EE']},'textinfo':'none','sort':False}]}}
+    # Presentation totals derive from the filtered data; operational statuses stay intact.
+    indicators['Urgentes']=sum(r.get('prioridade') in ('Alta','Crítica') and r['status']!='Concluída' for r in os)
+    charts['trend']['data']=[{'type':'scatter','mode':'lines+markers','fill':'tozeroy','name':'Ordens de serviço','x':months,'y':[sum(r['abertura'].startswith(m) for r in os) for m in months],'line':{'color':'#00cfff','shape':'spline'}}]
+    charts['trend']['data'] += [{'type':'scatter','mode':'lines+markers','name':status,'x':months,
+        'y':[sum(r['abertura'].startswith(m) and r['status']==status for r in os) for m in months],
+        'line':{'color':color,'shape':'spline'}} for status,color in [('Concluída','#50cf01'),('Pendente','#ff5269'),('Em andamento','#ffbf00')]]
+    charts['donut']['data'][0]['hole']=.7
+    charts['donut']['data'][0]['marker']['colors']=['#50cf01','#007bff','#ffbf00']
     return indicators,charts

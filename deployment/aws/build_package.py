@@ -4,22 +4,28 @@ import hashlib
 import tarfile
 
 ROOT = Path(__file__).resolve().parents[2]
-OUTPUT = ROOT.parent / 'DashboardOS_2.0_deploy.tar.gz'
+OUTPUT = ROOT.parent / ('DashboardOS_2.0_' + (ROOT/'VERSION').read_text().strip() + '_codigo.tar.gz')
 TOP = 'DashboardOS_2.0'
-DIRECTORIES = {'services': {'.py'}, 'templates': {'.html'}, 'static': {'.css', '.js'}}
+DIRECTORIES = {'services': {'.py'}, 'templates': {'.html'}, 'static': {'.css', '.js', '.svg', '.png', '.webmanifest'}}
 DEPLOYMENT = {
-    '.env.example', 'dashboardos.env.example', 'requirements.txt',
-    'gunicorn.conf.py', 'nginx.conf', 'dashboardos.service',
-    'install.sh', 'deploy.sh', 'update.sh', 'backup.sh', 'backup.py',
-    'check.sh', 'DEPLOY_AWS.md', 'RELATORIO_TRANSFERENCIA.md', 'build_package.py',
+    'dashboardos.env.example', 'requirements.txt', 'gunicorn.conf.py',
+    'build_package.py', 'preflight_existente.py', 'backup_existente.py', 'ATUALIZAR_EXISTENTE.md',
+}
+EXCLUDED_SERVICES = {
+    'demo_guard', 'demo_notifications', 'demo_web', 'email_recipient_policy',
+    'email_recipient_repository', 'email_recipient_schema', 'notification_recipients',
+    'continuity_anchor', 'identity_recovery', 'identity_planner', 'identity_operation_schema',
+    'identity_operation_journal', 'identity_excel_recovery', 'identity_excel_coordinator',
 }
 
 
+
 def selected_files():
-    files = [ROOT/'app.py', ROOT/'requirements.txt']
+    files = [ROOT/'app.py', ROOT/'requirements.txt', ROOT/'VERSION', ROOT/'CHANGELOG.md', ROOT/'RELATORIO_PREPARACAO_EC2.md']
     for folder, extensions in DIRECTORIES.items():
         for path in sorted((ROOT/folder).rglob('*')):
-            if path.is_file() and path.suffix in extensions and '__pycache__' not in path.parts:
+            if (path.is_file() and path.suffix in extensions and '__pycache__' not in path.parts
+                    and path.stem not in EXCLUDED_SERVICES and not path.stem.startswith(('demo_', 'demo-'))):
                 files.append(path)
     files += [ROOT/'deployment/aws'/name for name in sorted(DEPLOYMENT)]
     for path in files:
@@ -31,6 +37,8 @@ def selected_files():
 
 
 def build():
+    if OUTPUT.exists():
+        raise RuntimeError('Pacote ja existe; preserve-o antes de gerar novamente.')
     files = selected_files()
     with tarfile.open(OUTPUT, 'w:gz') as archive:
         for path in files:

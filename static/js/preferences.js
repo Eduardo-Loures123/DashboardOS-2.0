@@ -2,14 +2,14 @@
 window.DashboardPreferences=(()=>{
  const root=document.documentElement;
  const key='DashboardOS_2.0:appearance:v1:'+(root.dataset.userKey||'login');
- const defaults={theme:'light',font:'default',reduceMotion:false,density:'default',numbers:'standard'};
+ const defaults={theme:'dark',font:'default',reduceMotion:false,density:'default',numbers:'standard'};
  const allowed={theme:['light','dark','auto'],font:['small','default','large','xlarge'],density:['compact','default'],numbers:['standard','compact']};
  const scales={small:1,default:1.1,large:1.22,xlarge:1.35};
  const systemTheme=window.matchMedia?.('(prefers-color-scheme: dark)');
  const systemMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)');
  let values={...defaults};
  function validate(data){const clean={...defaults};for(const field of Object.keys(allowed))if(allowed[field].includes(data?.[field]))clean[field]=data[field];if(typeof data?.reduceMotion==='boolean')clean.reduceMotion=data.reduceMotion;return clean;}
- try{values=validate(JSON.parse(localStorage.getItem(key)||'null'));}catch{}
+ try{values=validate(JSON.parse(localStorage.getItem(key)||root.dataset.accountAppearance||'null'));}catch{}
  function apply(notify=true){
   root.dataset.theme=values.theme==='auto'?(systemTheme?.matches?'dark':'light'):values.theme;
   root.dataset.font=values.font;root.dataset.density=values.density;

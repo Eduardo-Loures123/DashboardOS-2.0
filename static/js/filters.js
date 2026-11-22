@@ -1,6 +1,6 @@
-let activeFilters={};
+let activeFilters=Object.fromEntries([...new URLSearchParams(location.search)].filter(([key])=>['equipe','funcionario','status','prioridade','inicio','fim','situacao','cargo','sistema','responsavel'].includes(key)));
 function filterLabel(key){return ({inicio:'Data inicial',fim:'Data final',situacao:'Situação do vencimento',q:'Pesquisa'})[key]||state.labels[key]||key;}
-function optionLabel(key,value){const target=({equipe:'Equipes',funcionario:'Funcionarios',responsavel:'Funcionarios',acesso:'Acessos'})[key];return target?(state.lookups?.[target]?.find(r=>r.value===value)?.label||value):value;}
+function optionLabel(key,value){const target=({equipe:'Equipes',funcionario:'Funcionarios',responsavel:'Funcionarios',acesso:'Acessos'})[key];if(key==='situacao')return expiryPresentation(value)[0];return target?(state.lookups?.[target]?.find(r=>r.value===value)?.label||value):value;}
 document.querySelector('#filters-button').addEventListener('click',()=>{
  if(!dataReady||!Array.isArray(state.filterFields))return;
  const form=el('form');
