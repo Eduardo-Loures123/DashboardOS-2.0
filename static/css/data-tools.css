@@ -1,0 +1,39 @@
+/* Local additions to the shared management and modal components. */
+.management-title{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.deadline-switch{display:inline-flex;gap:3px;padding:3px;border:1px solid var(--dos-border);border-radius:10px;background:var(--dos-bg)}
+.deadline-switch button{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid transparent;border-radius:7px;padding:6px 10px;background:transparent;color:var(--dos-muted);font:inherit;font-size:12px;transition:background 180ms,color 180ms,border-color 180ms}
+.deadline-switch button[aria-pressed=true]{background:var(--dos-blue);border-color:var(--dos-cyan);color:#fff}
+.deadline-switch button:hover{border-color:var(--dos-border)}
+.deadline-switch [data-icon],.deadline-switch .ui-icon{width:16px;height:16px;flex:none}
+html[data-theme] .badge.neutral{background:var(--dos-raised);border-color:var(--dos-border);color:var(--dos-muted)}
+.expiry-summary{flex-wrap:wrap}
+.expiry-summary>small{align-self:center}
+html dialog.import-modal{width:min(800px,94vw);max-height:90dvh}
+html dialog.import-modal[open]{display:flex;flex-direction:column;height:min(780px,90dvh);overflow:hidden}
+.import-modal .modal-heading{flex:none;margin-bottom:16px}
+html dialog.import-modal #modal-body{display:flex;flex:1;min-height:0;overflow:hidden}
+.import-layout{display:flex;flex-direction:column;gap:14px;min-width:0;min-height:0;width:100%;padding:4px}
+.import-content{display:grid;gap:14px;min-height:0;overflow:auto;padding-right:5px;flex:1}
+.import-modal .import-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-content:start}
+.import-file-group,.import-mode-group{display:grid;gap:10px;align-content:start;min-width:0}
+.import-form>button{grid-column:1/-1}
+.import-layout>.form-actions{flex:none;border-top:1px solid var(--line);padding-top:12px}
+.import-layout p{line-height:1.5;margin:0}
+.import-status{padding:12px;border:1px solid var(--dos-border);border-radius:10px;background:var(--dos-raised)}
+.import-preview{display:grid;gap:12px;min-width:0}
+.import-preview:empty{display:none}
+.import-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.import-summary article{padding:12px;border:1px solid var(--dos-border);border-radius:10px;background:var(--dos-bg)}
+.import-summary small{color:var(--dos-muted);line-height:1.5}
+.import-list{max-height:300px;overflow:auto;border:1px solid var(--dos-border);border-radius:10px;padding:10px;overflow-wrap:anywhere}
+.import-list-pages{position:sticky;bottom:0;display:flex;align-items:center;justify-content:center;gap:10px;background:var(--dos-surface);padding:8px}
+.import-change{padding:8px;border-bottom:1px solid var(--line)}
+.import-change summary{cursor:pointer;color:var(--dos-text);font-size:12px}
+.import-change dl{display:grid;grid-template-columns:130px minmax(0,1fr);gap:6px 12px;font-size:12px}
+.import-change dt{color:var(--dos-muted)}
+.import-change dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.import-layout input[type=file]{max-width:100%}
+.import-layout[aria-busy=true]{cursor:progress}
+html body:has(#import-excel) .toolbar .actions{flex-wrap:wrap}
+@media(max-width:1300px){html body:has(#import-excel) .page-chrome{grid-template-columns:minmax(0,1fr) auto}html body:has(#import-excel) .page-chrome .header-right{grid-column:2;grid-row:1}html body:has(#import-excel) .page-chrome .header-operations{display:flex;align-items:center;justify-content:space-between;grid-column:1/-1;grid-row:2;gap:10px}html body:has(#import-excel) .header-operations .toolbar{padding-top:0;min-width:0}}
+@media(max-width:600px){.management-title{gap:8px}.deadline-switch button{padding:6px 8px}.import-summary,.import-modal .import-form{grid-template-columns:1fr}.import-change dl{grid-template-columns:1fr}.import-layout .form-actions{flex-wrap:wrap}.import-layout input[type=file]{font-size:12px}}

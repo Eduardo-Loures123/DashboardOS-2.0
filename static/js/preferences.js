@@ -2,7 +2,7 @@
 window.DashboardPreferences=(()=>{
  const root=document.documentElement;
  const key='DashboardOS_2.0:appearance:v1:'+(root.dataset.userKey||'login');
- const defaults={theme:'light',font:'default',reduceMotion:false,density:'default',numbers:'standard'};
+ const defaults={theme:'dark',font:'default',reduceMotion:false,density:'default',numbers:'standard'};
  const allowed={theme:['light','dark','auto'],font:['small','default','large','xlarge'],density:['compact','default'],numbers:['standard','compact']};
  const scales={small:1,default:1.1,large:1.22,xlarge:1.35};
  const systemTheme=window.matchMedia?.('(prefers-color-scheme: dark)');

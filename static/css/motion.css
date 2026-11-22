@@ -1,0 +1,39 @@
+:root{--motion-fast:150ms;--motion-selection:190ms;--motion-menu:240ms;--motion-modal:260ms;--motion-modal-exit:180ms;--motion-chart:300ms;--motion-layout:280ms;--motion-theme:220ms;--motion-ease:cubic-bezier(.22,.68,.2,1);--motion-offset:5px;--motion-scale:.988;--ease:var(--motion-ease);--profile-duration:var(--motion-selection)}
+@property --dos-bg{syntax:'<color>';inherits:true;initial-value:#eff5fc}
+@property --dos-surface{syntax:'<color>';inherits:true;initial-value:#fff}
+@property --dos-raised{syntax:'<color>';inherits:true;initial-value:#e4eefb}
+@property --dos-text{syntax:'<color>';inherits:true;initial-value:#143151}
+@property --dos-border{syntax:'<color>';inherits:true;initial-value:#a5c8e7}
+html{transition:--dos-bg var(--motion-theme),--dos-surface var(--motion-theme),--dos-raised var(--motion-theme),--dos-text var(--motion-theme),--dos-border var(--motion-theme)}
+html .shell{transition:grid-template-columns var(--motion-layout) var(--motion-ease)}
+html .sidebar .nav-label{transition:opacity var(--motion-selection),max-width var(--motion-menu);max-width:190px;opacity:1;white-space:nowrap}
+html[data-sidebar=collapsed] .sidebar .nav-label{display:block;max-width:0;opacity:0;visibility:hidden;overflow:hidden}
+html :is(button,.button,.record-action){transition:background-color var(--motion-fast),border-color var(--motion-fast),box-shadow var(--motion-fast),color var(--motion-fast),opacity var(--motion-fast);transform:none}
+html :is(button,.button):hover{transform:none}
+html :is(button,.button):active:not(:disabled){filter:brightness(.94)}
+html :is(input,select,textarea,.select-input){transition:border-color var(--motion-selection),box-shadow var(--motion-selection),background-color var(--motion-theme),color var(--motion-theme)}
+html :is(.panel,.kpi,.team-card,.premium-metric){transition:border-color var(--motion-selection),box-shadow var(--motion-selection),background-color var(--motion-theme);transform:none}
+html .team-card:hover{transform:none}
+html tbody tr{transition:background-color var(--motion-fast)}
+html :is(.sidebar a,.select-option,.account-avatar){transition:background-color var(--motion-fast),color var(--motion-fast),border-color var(--motion-selection),box-shadow var(--motion-selection)}
+html .chart-tooltip{animation:dos-tip-in var(--motion-fast) var(--motion-ease)}
+html .pielayer .slice path{transition:transform var(--motion-selection) var(--motion-ease),filter var(--motion-fast)}
+html .barlayer .point path{transition:filter var(--motion-fast),stroke var(--motion-fast)}
+html .scatterlayer .trace{transition:opacity var(--motion-selection)}
+html dialog[open]{animation:dos-modal-in var(--motion-modal) var(--motion-ease)}
+html dialog.modal-chart[open]{animation-duration:var(--motion-chart)}
+html dialog.is-closing{animation:dos-modal-out var(--motion-modal-exit) var(--motion-ease) forwards}
+html dialog[open]::backdrop{animation:dos-backdrop-in var(--motion-modal) ease}
+html dialog.is-closing::backdrop{animation:dos-backdrop-out var(--motion-modal-exit) ease forwards}
+html .notification-row{animation:dos-tip-in var(--motion-fast) ease}
+html .form-error:not(:empty),html .select-popup:not([hidden]){animation:dos-tip-in var(--motion-fast) ease}
+html #toast{transition:opacity var(--motion-fast),transform var(--motion-selection)}
+html :is(.notification-category,.analysis-status,.access-ranking-row){transition:background-color var(--motion-selection),border-color var(--motion-selection),box-shadow var(--motion-selection)}
+html :is(body,main,.page-chrome,.settings-panel){transition:background-color var(--motion-theme),color var(--motion-theme)}
+@keyframes dos-modal-in{from{opacity:0;transform:translateY(var(--motion-offset)) scale(var(--motion-scale))}to{opacity:1;transform:none}}
+@keyframes dos-modal-out{to{opacity:0;transform:translateY(var(--motion-offset)) scale(var(--motion-scale))}}
+@keyframes dos-backdrop-in{from{opacity:0}to{opacity:1}}
+@keyframes dos-backdrop-out{to{opacity:0}}
+@keyframes dos-tip-in{from{opacity:0}to{opacity:1}}
+html[data-reduce-motion=true]{--motion-fast:0ms;--motion-selection:0ms;--motion-menu:0ms;--motion-modal:0ms;--motion-modal-exit:0ms;--motion-chart:0ms;--motion-layout:0ms;--motion-theme:0ms}
+@media(prefers-reduced-motion:reduce){:root{--motion-fast:0ms;--motion-selection:0ms;--motion-menu:0ms;--motion-modal:0ms;--motion-modal-exit:0ms;--motion-chart:0ms;--motion-layout:0ms;--motion-theme:0ms}}

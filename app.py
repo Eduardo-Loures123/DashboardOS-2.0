@@ -7,17 +7,22 @@ import pandas as pd
 from flask import Flask, render_template, request, jsonify, send_file, session, redirect, url_for, g
 from services.excel_service import ExcelService
 from services.schema import SCHEMA, LABELS, STATUS
-from services.dashboard_service import enrich, filtered, summary
+from services.dashboard_service import enrich, filtered, summary, overview
 from services.auth_service import AuthService
 from services.production import configure
 
 ROOT=Path(__file__).resolve().parent
+APP_VERSION=(ROOT/'VERSION').read_text(encoding='utf-8').strip()
 PAGES={'dashboard':('Visão Geral',None),'funcionarios':('Funcionários','Funcionarios'),'equipes':('Equipes','Equipes'),'ordens-servico':('Ordens de Serviço','OrdensServico'),'acessos':('Acessos','Acessos'),'vencimentos':('Vencimentos','Acessos'),'renovacoes':('Renovações','Renovacoes'),'relatorios':('Relatórios',None)}
 DATES={'Funcionarios':'admissao','OrdensServico':'abertura','Acessos':'vencimento','Renovacoes':'solicitacao'}
 FILTERS={'dashboard':['equipe','status','prioridade','inicio','fim'],'funcionarios':['equipe','cargo','status'],'equipes':['responsavel'],'ordens-servico':['equipe','funcionario','status','prioridade','inicio','fim'],'acessos':['equipe','funcionario','sistema','situacao'],'vencimentos':['equipe','sistema','situacao'],'renovacoes':['status','responsavel','inicio','fim'],'relatorios':['equipe','inicio','fim']}
 
 def create_app(path=None,auth_directory=None):
     app=Flask(__name__)
+    app.config['APP_VERSION']=APP_VERSION
+    @app.context_processor
+    def version_context():
+        return {'app_version': app.config['APP_VERSION']}
     production=configure(app, ROOT, path, auth_directory)
     auth=AuthService(app.config['AUTH_DIRECTORY'])
     app.secret_key=app.config.get('SECRET_KEY') or auth.secret();app.config['AUTH']=auth
@@ -25,6 +30,10 @@ def create_app(path=None,auth_directory=None):
     store=ExcelService(app.config['EXCEL_PATH']); app.config['STORE']=store
     @app.before_request
     def protect():
+        if request.path=='/api/import/preview':
+            from services.excel_import_service import MAX_UPLOAD
+            request.max_content_length=MAX_UPLOAD+65536
+            request.max_form_parts=4
         if request.host.split(':')[0] not in app.config['ALLOWED_HOSTS']:return jsonify(error='Host não permitido.'),403
         if 'csrf' not in session:session['csrf']=secrets.token_hex(24)
         g.user=auth.current(session.get('auth_token'))
@@ -47,6 +56,8 @@ def create_app(path=None,auth_directory=None):
         return response
     @app.errorhandler(500)
     def internal(error):return jsonify(error='Erro interno. Consulte os logs do serviço.'),500
+    @app.errorhandler(413)
+    def oversized(error):return jsonify(error='A requisição excede o tamanho permitido. Arquivos Excel devem ter até 5 MB.' if request.path.startswith('/api/import/') else 'A requisição excede o tamanho permitido. Fotos devem ter até 5 MB.'),413
     def begin_session(user_id=None):
         auth.revoke(session.get('auth_token'));session.clear()
         session['auth_token']=auth.start(user_id);session['csrf']=secrets.token_hex(24);session.permanent=True
@@ -93,10 +104,18 @@ def create_app(path=None,auth_directory=None):
     def page_view(page='dashboard'):
         if page not in PAGES:return 'Página não encontrada',404
         return render_template(page.replace('-','_')+'.html',page=page,title=PAGES[page][0],pages=PAGES,csrf=session['csrf'],user=g.user)
+    def view_sheet(page):
+        if page=='vencimentos':
+            kind=request.args.get('tipo','acessos')
+            if kind not in ('acessos','os'):raise ValueError('Tipo de vencimento inválido.')
+            return 'OrdensServico' if kind=='os' else 'Acessos'
+        return PAGES[page][1]
+    def view_filters(page):
+        return ['equipe','funcionario','status','prioridade','situacao','inicio','fim'] if page=='vencimentos' and view_sheet(page)=='OrdensServico' else FILTERS[page]
     def get_data(page):
         if page not in PAGES:raise ValueError('Página inválida.')
         raw=store.read(); data=enrich(raw)
-        filters={k:v for k,v in request.args.items() if k in FILTERS[page]+['q'] and v}
+        filters={k:v for k,v in request.args.items() if k in view_filters(page)+['q'] and v}
         for key in ['inicio','fim']:
             if filters.get(key):
                 try:date.fromisoformat(filters[key])
@@ -110,18 +129,25 @@ def create_app(path=None,auth_directory=None):
                 if sheet=='Equipes' and team: data[sheet]=[r for r in data[sheet] if r['codigo']==team]
                 else:data[sheet]=filtered(data[sheet],relevant,DATES.get(sheet),lookups)
             return raw,data,[]
-        sheet=PAGES[page][1]
-        return raw,data,filtered(data[sheet],filters,DATES.get(sheet),lookups)
+        sheet=view_sheet(page)
+        source=data[sheet]
+        if page=='vencimentos' and sheet=='OrdensServico':
+            from services.deadline_service import order_deadlines
+            source=order_deadlines(source)
+        return raw,data,filtered(source,filters,'previsao' if page=='vencimentos' and sheet=='OrdensServico' else DATES.get(sheet),lookups)
     def reports(data):
         count=lambda rows,key:[{'grupo':k,'quantidade':v} for k,v in pd.Series([r[key] for r in rows],dtype='str').value_counts().items()]
-        return {'OS por equipe':count(data['OrdensServico'],'equipe'),'OS por status':count(data['OrdensServico'],'status'),'OS por período':count([dict(r,mes=r['abertura'][:7]) for r in data['OrdensServico']],'mes'),'Acessos por situação':count(data['Acessos'],'situacao'),'Vencimentos futuros':[r for r in data['Acessos'] if r['dias']>=0 and r['status']=='Ativo'],'Renovações pendentes':[r for r in data['Renovacoes'] if r['status'] not in ['Concluída','Rejeitada']],'Funcionários por equipe':count(data['Funcionarios'],'equipe')}
+        return {'OS por equipe':count(data['OrdensServico'],'equipe'),'OS por status':count(data['OrdensServico'],'status'),'OS por período':count([dict(r,mes=r['abertura'][:7]) for r in data['OrdensServico']],'mes'),'Acessos por situação':count(data['Acessos'],'situacao'),'Vencimentos futuros':[r for r in data['Acessos'] if isinstance(r.get('dias'),int) and r['dias']>=0 and r['status']=='Ativo'],'Renovações pendentes':[r for r in data['Renovacoes'] if r['status'] not in ['Concluída','Rejeitada']],'Funcionários por equipe':count(data['Funcionarios'],'equipe')}
     @app.get('/api/data/<page>')
     def api_data(page):
-        raw,data,rows=get_data(page); sheet=PAGES[page][1]
+        raw,data,rows=get_data(page); sheet=view_sheet(page)
         indicators,charts=summary(data)
         options={}
         base=enrich(raw)
-        for key in FILTERS[page]:
+        if page=='vencimentos' and sheet=='OrdensServico':
+            from services.deadline_service import order_deadlines
+            base[sheet]=order_deadlines(base[sheet])
+        for key in view_filters(page):
             if key in ['inicio','fim']:continue
             options[key]=sorted({str(r[key]) for r in base[sheet or 'OrdensServico'] if key in r})
         lookups={k:[{'value':r['codigo'],'label':r.get('nome',r.get('descricao',r.get('sistema',r['codigo'])))+' · '+r['codigo']} for r in raw[k]] for k in ['Funcionarios','Equipes','Acessos']}
@@ -131,7 +157,8 @@ def create_app(path=None,auth_directory=None):
         if page=='equipes':columns+=['quantidade_funcionarios','quantidade_os','quantidade_acessos']
         from collections import Counter
         calendar=dict(Counter(r['previsao'] for r in data['OrdensServico'] if r['status']!='Concluída'))
-        return jsonify(rows=rows,columns=columns,fields=SCHEMA.get(sheet,[]),labels=dict(LABELS,nome_funcionario='Nome do funcionário'),statuses=STATUS.get(sheet,[]),filters=options,filterFields=FILTERS[page],lookups=lookups,indicators=indicators,charts=charts,calendar=calendar,reports=reports(data) if page=='relatorios' else {},sheet=sheet,user={'role':g.user['role'],'id':g.user['id']})
+        from services.agenda_service import agenda
+        return jsonify(rows=rows,columns=columns,fields=SCHEMA.get(sheet,[]),labels=dict(LABELS,nome_funcionario='Nome do funcionário'),statuses=STATUS.get(sheet,[]),filters=options,filterFields=view_filters(page),lookups=lookups,indicators=indicators,charts=charts,calendar=calendar,overview=overview(data) if page=='dashboard' else {},agenda=agenda(data) if page=='dashboard' else {},version=app.config['APP_VERSION'],reports=reports(data) if page=='relatorios' else {},sheet=sheet,user={'role':g.user['role'],'id':g.user['id']})
     @app.route('/api/records/<sheet>',methods=['POST'])
     @app.route('/api/records/<sheet>/<code>',methods=['PUT','DELETE'])
     def records(sheet,code=None):
@@ -139,10 +166,15 @@ def create_app(path=None,auth_directory=None):
         payload=request.get_json(silent=True)
         if request.method!='DELETE' and not isinstance(payload,dict):raise ValueError('Dados inválidos.')
         result=store.mutate(sheet,payload,code,request.method=='DELETE')
+        try:
+            app.config['PROFILES'].record_activity(g.user['id'],{'POST':'create','PUT':'update','DELETE':'delete'}[request.method],sheet,result)
+        except Exception:
+            # The Excel commit succeeded: never invite a duplicate operation.
+            app.logger.error('Falha ao registrar atividade concluída; revisar armazenamento local.')
         return jsonify(codigo=result,message='Registro excluído.' if request.method=='DELETE' else 'Registro salvo com sucesso.')
     @app.get('/api/export/<page>')
     def export(page):
-        _,data,rows=get_data(page); tables=reports(data) if page=='relatorios' else ({PAGES[page][1]:rows} if PAGES[page][1] else data)
+        _,data,rows=get_data(page); tables=reports(data) if page=='relatorios' else ({view_sheet(page):rows} if view_sheet(page) else data)
         output=BytesIO()
         with pd.ExcelWriter(output,engine='openpyxl') as writer:
             for name,records in tables.items():
@@ -154,6 +186,8 @@ def create_app(path=None,auth_directory=None):
         return send_file(output,as_attachment=True,download_name=page+'.xlsx',mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     from services.enterprise_routes import register
     register(app,auth,store,PAGES)
+    from services.import_routes import register as register_import
+    register_import(app,store,auth)
     return app
 
 app=create_app()

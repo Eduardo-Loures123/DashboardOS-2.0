@@ -1,0 +1,23 @@
+{
+  "name": "DashboardOS",
+  "short_name": "DashboardOS",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#080f1e",
+  "theme_color": "#007aff",
+  "icons": [
+    {
+      "src": "/static/brand/dashboardos-symbol.svg?identity=87fe34514291",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/brand/dashboardos-icon.png?identity=87fe34514291",
+      "sizes": "1254x1254",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

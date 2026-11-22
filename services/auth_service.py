@@ -37,7 +37,10 @@ class AuthService:
         if not re.fullmatch(r'[a-z0-9_.-]{3,64}',user_id):raise ValueError('Use ID de 3 a 64 caracteres: letras, números, ponto, hífen ou sublinhado.')
         if len(password)<12 or len(password)>256:raise ValueError('Use uma senha de 12 a 256 caracteres.')
         with self.connect() as db:
-            try:db.execute('INSERT INTO users VALUES (?,?)',(user_id,generate_password_hash(password)))
+            try:
+                db.execute('INSERT INTO users(id,password_hash) VALUES (?,?)',(user_id,generate_password_hash(password)))
+                if db.execute("SELECT 1 FROM sqlite_master WHERE name='profile_logins'").fetchone():
+                    db.execute('INSERT INTO profile_logins VALUES (?,?)',(user_id,user_id))
             except sqlite3.IntegrityError:raise ValueError('Esse ID já está cadastrado.')
             if db.execute("SELECT 1 FROM sqlite_master WHERE name='account'").fetchone():
                 from .enterprise_service import stamp
@@ -51,17 +54,19 @@ class AuthService:
             db.execute('DELETE FROM attempts WHERE occurred < ?',(now-600,))
             if db.execute('SELECT COUNT(*) FROM attempts WHERE client=?',(client,)).fetchone()[0]>=10:
                 return None,429
-            row=db.execute('SELECT * FROM users WHERE id=?',(user_id,)).fetchone()
+            if db.execute("SELECT 1 FROM sqlite_master WHERE name='profile_logins'").fetchone():
+                row=db.execute('SELECT u.* FROM users u LEFT JOIN profile_logins p ON p.user_id=u.id WHERE p.login=? COLLATE NOCASE OR (p.user_id IS NULL AND u.id=?)',(user_id,user_id)).fetchone()
+            else:row=db.execute('SELECT * FROM users WHERE id=?',(user_id,)).fetchone()
             valid=check_password_hash(row['password_hash'] if row else self.dummy_hash,password)
             if row and db.execute("SELECT 1 FROM sqlite_master WHERE name='account'").fetchone():
-                account=db.execute('SELECT state FROM account WHERE user_id=?',(user_id,)).fetchone()
+                account=db.execute('SELECT state FROM account WHERE user_id=?',(row['id'],)).fetchone()
                 valid=valid and bool(account and account['state']=='active')
             if not row or not valid:
                 db.execute('INSERT INTO attempts VALUES (?,?)',(client,now));return None,401
             db.execute('DELETE FROM attempts WHERE client=?',(client,))
             if db.execute("SELECT 1 FROM sqlite_master WHERE name='account'").fetchone():
                 from .enterprise_service import stamp
-                db.execute('UPDATE account SET last_login=? WHERE user_id=?',(stamp(),user_id))
+                db.execute('UPDATE account SET last_login=? WHERE user_id=?',(stamp(),row['id']))
             return row['id'],200
     def start(self,user_id=None):
         token=secrets.token_urlsafe(32)
@@ -81,7 +86,11 @@ class AuthService:
                 account=db.execute('SELECT role,state FROM account WHERE user_id=?',(row['user_id'],)).fetchone()
                 if not account or account['state']!='active':return None
                 role=account['role']
-        return {'id':row['user_id'] or 'Visitante','role':role,'preferences_key':hashlib.sha256((row['user_id'] or 'guest').encode()).hexdigest()[:24]}
+            login=row['user_id'] or 'Visitante';display=login
+            if row['user_id'] and db.execute("SELECT 1 FROM sqlite_master WHERE name='profile_logins'").fetchone():
+                identity=db.execute('SELECT p.login,a.display_name FROM profile_logins p JOIN account a ON a.user_id=p.user_id WHERE p.user_id=?',(row['user_id'],)).fetchone()
+                if identity:login=identity['login'];display=identity['display_name'] or login
+        return {'id':row['user_id'] or 'Visitante','login':login,'display_name':display,'role':role,'preferences_key':hashlib.sha256((row['user_id'] or 'guest').encode()).hexdigest()[:24]}
     def revoke(self,token):
         if isinstance(token,str) and token:
             with self.connect() as db:db.execute('DELETE FROM sessions WHERE token_hash=?',(self.digest(token),))

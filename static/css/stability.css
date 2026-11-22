@@ -1,10 +1,6 @@
-/* Contenção e dimensões; cores, fontes, ícones, bordas e sombras são preservados. */
-.shell{grid-template-rows:minmax(0,1fr)}
+/* Contenção e dimensões; cores, fontes, ícones, bordas e sombras são preservados. */.shell{grid-template-rows:minmax(0,1fr)}
 main>header,main>.toolbar,main>.kpis,main>.secondary-kpis,main>footer{flex-shrink:0}
-.sidebar{min-width:0;gap:0}
-.sidebar>nav{min-height:0;overflow:auto;flex-shrink:1}
-.sidebar>.brand,.sidebar>.profile,.sidebar>.sidebar-bottom{flex-shrink:0}
-.sidebar a,.profile strong,.profile>span{overflow-wrap:anywhere}
+.profile strong,.profile>span{overflow-wrap:anywhere}
 .toolbar,.toolbar>.actions,.panel-heading,.panel-heading>div{min-width:0}
 .toolbar>.actions{flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
 .panel-heading{flex-shrink:0}
@@ -22,7 +18,8 @@ main>header,main>.toolbar,main>.kpis,main>.secondary-kpis,main>footer{flex-shrin
 .plot .svg-container{max-width:100%}
 .calendar{overflow:auto}
 .status-panel>.status-list,.status-panel>.button,.status-panel>.hint{flex-shrink:0}
-.status-row{gap:8px}.status-row b{flex-shrink:0}
+.status-row{gap:8px}
+.status-row b{flex-shrink:0}
 .table-panel>.pagination,.table-panel>.expiry-summary{flex-shrink:0}
 .table-scroll{min-width:0;overscroll-behavior:contain}
 .pagination,.pagination>div{flex-wrap:wrap}
@@ -33,7 +30,8 @@ main>header,main>.toolbar,main>.kpis,main>.secondary-kpis,main>footer{flex-shrin
 dialog{max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);overflow:auto}
 dialog[open]{display:flex;flex-direction:column}
 .modal-heading{flex-shrink:0;align-items:flex-start;gap:12px}
-.modal-heading>div{min-width:0}.modal-heading h2{overflow-wrap:anywhere}
+.modal-heading>div{min-width:0}
+.modal-heading h2{overflow-wrap:anywhere}
 #modal-close{flex-shrink:0}
 #modal-body{min-height:0;overflow:auto;overscroll-behavior:contain}
 #modal-body input,#modal-body select,#modal-body textarea{min-width:0;max-width:100%}
@@ -41,19 +39,20 @@ dialog[open]{display:flex;flex-direction:column}
 .modal-chart{min-width:0;width:52vw;height:54dvh;max-height:calc(100dvh - 24px)}
 .modal-chart #modal-body{display:flex;flex:1 1 0;min-height:0;overflow:visible}
 .modal-chart .plot{height:auto}
-@media(min-width:1000px){.dashboard-grid{flex:1 1 0}.table-panel,.reports-layout{flex:1 1 0}.donut-wrap{flex:1 1 0}.donut-card{flex:1 1 0}}
-@media(max-width:999px){
- .shell{grid-template-rows:auto;height:auto}
- .sidebar>nav{flex-shrink:0}
- .left-charts{grid-template-rows:280px 260px}
- .table-panel{flex:0 0 auto;height:75dvh;min-height:400px}
- .report-results{height:650px;min-height:0;max-height:none}
- .modal-chart{width:90vw;height:75dvh}
+@media(min-width:1000px){.dashboard-grid{flex:1 1 0}
+.table-panel,.reports-layout{flex:1 1 0}
+.donut-wrap{flex:1 1 0}
+.donut-card{flex:1 1 0}}
+@media(max-width:999px){.shell{grid-template-rows:auto;height:auto}
+.left-charts{grid-template-rows:280px 260px}
+.table-panel{flex:0 0 auto;height:75dvh;min-height:400px}
+.report-results{height:650px;min-height:0;max-height:none}
+.modal-chart{width:90vw;height:75dvh}
+
 }
-@media(max-width:600px){
- .toolbar>.actions{justify-content:flex-start;flex-shrink:1}
- .sidebar>nav{overflow:auto}
- .panel-heading .search{min-width:0}
- .modal-chart{width:94vw;height:75dvh}
- .form-actions{position:static}
+@media(max-width:600px){.toolbar>.actions{justify-content:flex-start;flex-shrink:1}
+.panel-heading .search{min-width:0}
+.modal-chart{width:94vw;height:75dvh}
+.form-actions{position:static}
+
 }

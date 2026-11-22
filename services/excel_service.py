@@ -6,7 +6,7 @@ import pandas as pd
 from .schema import SCHEMA, PREFIX, STATUS
 
 class ExcelService:
-    def __init__(self,path): self.path=Path(path); self.observer=None
+    def __init__(self,path): self.path=Path(path); self.observer=None; self.recover=None
     @contextmanager
     def lock(self):
         lock=Path(str(self.path)+'.lock'); deadline=time.monotonic()+10
@@ -16,7 +16,9 @@ class ExcelService:
             except FileExistsError:
                 if time.monotonic()>deadline: raise ValueError('Planilha em uso. Tente novamente; se o sistema foi interrompido, remova o arquivo .lock com o servidor parado.')
                 time.sleep(.05)
-        try: yield
+        try:
+            if self.recover:self.recover()
+            yield
         finally: os.close(fd); lock.unlink(missing_ok=True)
     def read(self):
         with self.lock(): return self._read()
@@ -30,7 +32,7 @@ class ExcelService:
                 if missing:raise ValueError('Colunas ausentes em '+name+': '+', '.join(sorted(missing)))
                 data[name]=frame.to_dict('records')
             return data
-    def validate(self,data):
+    def validate(self,data,relationships=True):
         for sheet,rows in data.items():
             codes=[row['codigo'] for row in rows]
             if len(codes)!=len(set(codes)): raise ValueError('Código duplicado: '+sheet)
@@ -49,6 +51,7 @@ class ExcelService:
                     if (row['status']=='Concluída') != bool(row['conclusao']): raise ValueError('Informe conclusão apenas para OS concluídas.')
                     if row['conclusao'] and not row['abertura']<=row['conclusao']<=date.today().isoformat(): raise ValueError('Conclusão deve estar entre abertura e hoje.')
                 if sheet=='Acessos' and row['vencimento']<row['concessao']: raise ValueError('Vencimento anterior à concessão.')
+        if not relationships:return
         refs=[('Funcionarios','equipe','Equipes'),('Equipes','responsavel','Funcionarios'),('OrdensServico','funcionario','Funcionarios'),('Acessos','funcionario','Funcionarios'),('Renovacoes','acesso','Acessos'),('Renovacoes','responsavel','Funcionarios')]
         for source,field,target in refs:
             valid={r['codigo'] for r in data[target]}
@@ -73,13 +76,7 @@ class ExcelService:
             shutil.copy2(self.path,backup/(datetime.now().strftime('%Y%m%d_%H%M%S_%f')+'.xlsx'))
             temp=self.path.with_name(uuid.uuid4().hex+'.tmp.xlsx')
             try:
-                with pd.ExcelWriter(temp,engine='openpyxl') as writer:
-                    for name,records in data.items():
-                        pd.DataFrame(records,columns=SCHEMA[name]).to_excel(writer,sheet_name=name,index=False)
-                        ws=writer.book[name]; ws.freeze_panes='A2'; ws.auto_filter.ref=ws.dimensions
-                        for cells in ws.iter_rows():
-                            for cell in cells:
-                                if isinstance(cell.value,str):cell.data_type='s'
+                self._write_workbook(temp,data)
                 os.replace(temp,self.path)
                 if self.observer:
                     try:self.observer(data)
@@ -91,3 +88,16 @@ class ExcelService:
             except PermissionError: raise ValueError('Feche a planilha no Excel antes de salvar.')
             finally: temp.unlink(missing_ok=True)
             return code
+
+    @staticmethod
+    def _write_workbook(path,data,preserve_extra=False):
+        """Stage a whole inventory as inert text. Caller owns lock and commit."""
+        with pd.ExcelWriter(path,engine='openpyxl') as writer:
+            for name,records in data.items():
+                columns=list(SCHEMA[name])
+                if preserve_extra:columns+=sorted({key for row in records for key in row if key not in columns})
+                pd.DataFrame(records,columns=columns).to_excel(writer,sheet_name=name,index=False)
+                ws=writer.book[name]; ws.freeze_panes='A2'; ws.auto_filter.ref=ws.dimensions
+                for cells in ws.iter_rows():
+                    for cell in cells:
+                        if isinstance(cell.value,str):cell.data_type='s'

@@ -52,6 +52,8 @@ def schema(db):
     ]
     for statement in statements:
         db.execute(statement)
+    from .profile_service import profile_schema
+    profile_schema(db)
 
 
 class EnterpriseService:
@@ -94,25 +96,48 @@ class EnterpriseService:
     def profile(self, user_id):
         with self.auth.connect() as db:
             row = db.execute('SELECT * FROM account WHERE user_id=?', (user_id,)).fetchone()
+            if not row and db.execute("SELECT 1 FROM sqlite_master WHERE name='profile_logins'").fetchone():
+                row = db.execute('SELECT a.* FROM account a JOIN profile_logins p ON p.user_id=a.user_id WHERE p.login=? COLLATE NOCASE',(user_id,)).fetchone()
             if not row:
                 raise ValueError('Conta não encontrada.')
             return self.public(row)
 
+    def verification_status(self, uid):
+        from .mail_service import mail_configuration
+        with self.auth.connect() as db:
+            account = db.execute('SELECT email,verified FROM account WHERE user_id=?', (uid,)).fetchone()
+            token = db.execute("SELECT expires FROM tokens WHERE user_id=? AND purpose='verify' AND expires>?", (uid, time.time())).fetchone()
+            row = db.execute('SELECT status,last_error FROM outbox WHERE user_id=? AND event_id IS NULL AND recipient=? ORDER BY id DESC LIMIT 1', (uid, account['email'])).fetchone()
+        state = 'missing' if not account['email'] else ('verified' if account['verified'] else 'unverified')
+        if state == 'unverified' and token and row:
+            state = {'pending': 'queued', 'sending': 'sending', 'sent': 'sent', 'failed': 'failed', 'uncertain': 'uncertain'}.get(row['status'], 'unverified')
+            if row['last_error'] and row['status'] == 'pending':
+                state = 'retrying'
+        return {'state': state, 'can_confirm': bool(token) and not account['verified'], 'delivery_available': mail_configuration()['ready']}
+
     def users(self):
         with self.auth.connect() as db:
-            return [self.public(r) for r in db.execute('SELECT * FROM account ORDER BY user_id')]
+            rows=[self.public(r) for r in db.execute('SELECT * FROM account ORDER BY user_id')]
+            if db.execute("SELECT 1 FROM sqlite_master WHERE name='profile_logins'").fetchone():
+                logins=dict(db.execute('SELECT user_id,login FROM profile_logins'))
+                for row in rows:row['login']=logins.get(row['user_id'],row['user_id'])
+            return rows
 
     def promote_initial(self, user_id, password):
         self.require_ready()
         with self.auth.connect() as db:
             db.execute('BEGIN IMMEDIATE')
-            row = db.execute('SELECT u.password_hash,a.role,a.state FROM users u JOIN account a ON a.user_id=u.id WHERE u.id=?', (identifier(user_id),)).fetchone()
+            lookup=identifier(user_id)
+            if db.execute("SELECT 1 FROM sqlite_master WHERE name='profile_logins'").fetchone():
+                linked=db.execute('SELECT user_id FROM profile_logins WHERE login=? COLLATE NOCASE',(lookup,)).fetchone()
+                if linked:lookup=linked[0]
+            row = db.execute('SELECT u.password_hash,a.role,a.state FROM users u JOIN account a ON a.user_id=u.id WHERE u.id=?', (lookup,)).fetchone()
             if not row or not check_password_hash(row['password_hash'], password) or row['state'] != 'active' or row['role'] != 'admin':
                 raise ValueError('Administrador ativo ou senha inválidos.')
             if db.execute("SELECT 1 FROM account WHERE role='superadmin'").fetchone():
                 raise ValueError('Já existe superadministrador. Utilize a administração autenticada.')
-            db.execute("UPDATE account SET role='superadmin' WHERE user_id=?", (user_id,))
-            self.audit(db, user_id, 'account.bootstrap', user_id)
+            db.execute("UPDATE account SET role='superadmin' WHERE user_id=?", (lookup,))
+            self.audit(db, lookup, 'account.bootstrap', lookup)
 
     def create_user(self, actor, data):
         uid = identifier(data.get('user_id'))
@@ -125,6 +150,8 @@ class EnterpriseService:
             self.superadmin(db, actor)
             try:
                 db.execute('INSERT INTO users(id,password_hash) VALUES (?,?)', (uid, hashed))
+                if db.execute("SELECT 1 FROM sqlite_master WHERE name='profile_logins'").fetchone():
+                    db.execute('INSERT INTO profile_logins VALUES (?,?)',(uid,uid))
             except sqlite3.IntegrityError:
                 raise ValueError('Esse ID já está cadastrado.')
             db.execute('INSERT INTO account(user_id,role,display_name,created) VALUES (?,?,?,?)', (uid, role, text(data.get('display_name', uid), 120, True), stamp()))
@@ -199,9 +226,16 @@ class EnterpriseService:
                 self.superadmin(db, actor)
             elif actor != uid:
                 raise ValueError('Conta inválida.')
-            row = db.execute('SELECT email,state FROM account WHERE user_id=?', (uid,)).fetchone()
+            row = db.execute('SELECT email,state,verified FROM account WHERE user_id=?', (uid,)).fetchone()
             if not row or row['state'] != 'active' or (purpose == 'verify' and not row['email']):
                 raise ValueError('Conta ativa e endereço de e-mail necessários.')
+            if purpose == 'verify':
+                if row['verified']:
+                    raise ValueError('Este e-mail já está confirmado.')
+                recent = db.execute("SELECT occurred FROM audit WHERE actor=? AND action='token.verify' AND occurred>? ORDER BY occurred DESC", (uid, datetime.fromtimestamp(time.time()-3600, timezone.utc).isoformat())).fetchall()
+                if len(recent) >= 5 or (recent and datetime.fromisoformat(recent[0]['occurred']).timestamp() > time.time()-60):
+                    raise ValueError('Aguarde antes de solicitar outro código. Limite de cinco solicitações por hora.')
+                db.execute("UPDATE outbox SET status='cancelled',body='' WHERE user_id=? AND event_id IS NULL AND status='pending'", (uid,))
             db.execute('DELETE FROM tokens WHERE user_id=? AND purpose=?', (uid, purpose))
             db.execute('INSERT INTO tokens VALUES (?,?,?,?,?)', (self.auth.digest(raw), uid, purpose, row['email'], time.time() + 1800))
             if purpose == 'verify':
@@ -211,6 +245,8 @@ class EnterpriseService:
         return raw if purpose == 'reset' else None
 
     def consume(self, raw, purpose, password=None, uid=None):
+        if purpose == 'verify':
+            return self.confirm_email(uid, raw)
         raw = text(raw, 200, True)
         with self.auth.connect() as db:
             db.execute('BEGIN IMMEDIATE')
@@ -225,6 +261,29 @@ class EnterpriseService:
             db.execute('DELETE FROM tokens WHERE user_id=? AND purpose=?', (row['user_id'], purpose))
             self.audit(db, row['user_id'], 'token.consume.' + purpose, row['user_id'])
 
+    def confirm_email(self, uid, raw):
+        # Persist rejected attempts before raising; rate limits survive restarts.
+        valid = False
+        with self.auth.connect() as db:
+            db.execute('BEGIN IMMEDIATE')
+            since = datetime.fromtimestamp(time.time()-600, timezone.utc).isoformat()
+            count = db.execute("SELECT COUNT(*) FROM audit WHERE actor=? AND action='verification.invalid' AND occurred>?", (uid or '', since)).fetchone()[0]
+            if count >= 5:
+                raise ValueError('Muitas tentativas. Aguarde dez minutos antes de confirmar novamente.')
+            row = None
+            if isinstance(raw, str) and 1 <= len(raw) <= 200:
+                row = db.execute("SELECT t.* FROM tokens t JOIN account a ON a.user_id=t.user_id WHERE t.digest=? AND t.purpose='verify' AND t.user_id=? AND t.expires>? AND t.value=a.email AND a.state='active'", (self.auth.digest(raw.strip()), uid, time.time())).fetchone()
+            if row:
+                db.execute('UPDATE account SET verified=1 WHERE user_id=?', (uid,))
+                db.execute("DELETE FROM tokens WHERE user_id=? AND purpose='verify'", (uid,))
+                db.execute("UPDATE outbox SET status='cancelled',body='' WHERE user_id=? AND event_id IS NULL AND status='pending'", (uid,))
+                self.audit(db, uid, 'token.consume.verify', uid)
+                valid = True
+            else:
+                self.audit(db, uid or '', 'verification.invalid', uid or '')
+        if not valid:
+            raise ValueError('Código inválido ou expirado. Confira o código ou solicite outro.')
+
     @staticmethod
     def emit(db, key, kind, title, message, link, recipients=None, email=True):
         cursor = db.execute('INSERT OR IGNORE INTO events(event_key,kind,title,message,link,occurred) VALUES (?,?,?,?,?,?)', (key, kind, title, message, link, stamp()))
@@ -236,7 +295,7 @@ class EnterpriseService:
             uid = user['user_id']
             if recipients is not None and uid not in recipients:
                 continue
-            if user['internal_alerts'] or kind == 'announcement':
+            if kind in ('operational','announcement') or user['internal_alerts']:
                 db.execute('INSERT INTO notifications(event_id,user_id) VALUES (?,?)', (event_id, uid))
             if email and user['email_alerts'] and user['verified'] and user['email']:
                 db.execute('INSERT INTO outbox(event_id,user_id,recipient,subject,body) VALUES (?,?,?,?,?)', (event_id, uid, user['email'], title, message))
@@ -265,7 +324,8 @@ class EnterpriseService:
                                 continue
                             version = old.get('version', 0) + 1
                             event_key = f'{sheet}:{code}:{version}:{key}'
-                            message = f"{row.get('descricao', row.get('sistema', ''))} · Responsável: {row.get('nome_funcionario', '')} · Equipe: {row.get('equipe', '')} · {key}: {old[key]} → {current[key]} · Vencimento: {current['due']} · Situação: {current['status']}"
+                            # General internal notices exclude free text and personal data.
+                            message = f"{code} · {key}: {old[key]} → {current[key]} · Vencimento: {current['due']} · Situação: {current['status']}"
                             count += self.emit(db, event_key, 'operational', code + ' · ' + current['band'], message, '/' + page + '?q=' + code)
                     current['version'] = (old.get('version', 0) + 1) if old and any(old[k] != current[k] for k in ('status', 'due', 'band')) else (old.get('version', 0) if old else 0)
                     db.execute('INSERT INTO snapshots VALUES (?,?,?) ON CONFLICT(sheet,code) DO UPDATE SET payload=excluded.payload', (sheet, code, json.dumps(current)))
@@ -278,7 +338,7 @@ class EnterpriseService:
 
     def notifications(self, uid):
         with self.auth.connect() as db:
-            return [dict(r) for r in db.execute('SELECT n.id,n.read_at,e.title,e.message,e.link,e.occurred FROM notifications n JOIN events e ON e.id=n.event_id WHERE n.user_id=? AND n.deleted=0 ORDER BY n.id DESC LIMIT 200', (uid,))]
+            return [dict(r) for r in db.execute('SELECT n.id,n.read_at,e.kind,e.title,e.message,e.link,e.occurred FROM notifications n JOIN events e ON e.id=n.event_id WHERE n.user_id=? AND n.deleted=0 ORDER BY n.id DESC LIMIT 200', (uid,))]
 
     def notification_action(self, uid, action, notification_id=None):
         if action not in ('read', 'delete'):

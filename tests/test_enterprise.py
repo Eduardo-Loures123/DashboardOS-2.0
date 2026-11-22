@@ -10,12 +10,13 @@ from app import create_app
 from services.auth_service import AuthService
 from services.enterprise_service import EnterpriseService
 from services.mail_service import process_outbox
-from tests.common import DataCase, login_admin
+from tests.common import DataCase, login_admin, enable_mock_mail
 
 
 class EnterpriseTests(DataCase):
     def setUp(self):
         super().setUp()
+        enable_mock_mail(self)
         self.app = create_app(self.path); self.app.testing = True
         self.client = self.app.test_client(); self.auth = self.app.config['AUTH']
         self.service = self.app.config['ENTERPRISE']

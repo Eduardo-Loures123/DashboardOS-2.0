@@ -1,0 +1,8 @@
+/* Shared space and interaction corrections. Native scrolling is retained. */
+html .record-scroll-region{min-height:0;min-width:0;overflow-y:auto;overflow-x:hidden;scrollbar-gutter:stable;overscroll-behavior:auto}
+html,html *,html *::before,html *::after{scrollbar-width:thin;scrollbar-color:#00bddd transparent!important}
+html ::-webkit-scrollbar,html::-webkit-scrollbar{width:4px!important;height:4px!important;background:transparent}
+html ::-webkit-scrollbar-track,html ::-webkit-scrollbar-track-piece,html ::-webkit-scrollbar-corner,html::-webkit-scrollbar-track,html::-webkit-scrollbar-corner{background:transparent!important;border:0!important;box-shadow:none!important}
+html ::-webkit-scrollbar-thumb,html::-webkit-scrollbar-thumb{background:#00bddd!important;border:0!important;border-radius:999px!important;min-height:40px;box-shadow:0 0 2px #00cfff22}
+html ::-webkit-scrollbar-button,html::-webkit-scrollbar-button{display:none!important;width:0!important;height:0!important;background:transparent}
+@supports selector(::-webkit-scrollbar){html,html *,html *::before,html *::after{scrollbar-width:auto!important;scrollbar-color:auto!important}}

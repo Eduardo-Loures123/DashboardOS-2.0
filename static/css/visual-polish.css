@@ -1,0 +1,44 @@
+/* One SVG language: shared dimensions, stroke geometry and alignment. */﻿
+:root{--icon-size:20px;--icon-small:16px;--icon-nav:22px}
+.ui-icon{display:inline-block;width:var(--icon-size,20px);height:var(--icon-size,20px);flex:0 0 auto;vertical-align:middle;overflow:visible;color:inherit;pointer-events:none}
+[data-icon]{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;line-height:0}
+.button,.icon-button,.row-actions button,.table-sort{align-items:center;gap:8px}
+.button>.ui-icon,.button>[data-icon]{--icon-size:18px}
+.icon-button{display:inline-flex;justify-content:center;line-height:1;min-width:40px;min-height:40px}
+.icon-button>.ui-icon,.icon-button>[data-icon]{--icon-size:20px}
+.row-actions button,.table-sort{display:inline-flex;justify-content:center}
+.row-actions .ui-icon,.table-sort .ui-icon{--icon-size:16px}
+.table-sort{white-space:nowrap}
+.kpi-icon>.ui-icon{width:27px;height:27px}
+.expand{display:inline-flex}
+.expand>.ui-icon{--icon-size:18px}
+.search>[data-icon]{color:var(--muted);--icon-size:18px}
+/* The root attribute is available before body parsing; the class keeps existing JS contracts. */html[data-sidebar=collapsed] .shell{display:grid;grid-template-columns:var(--rail) minmax(0,1fr)}
+html[data-sidebar=collapsed] main{min-width:0;border-radius:0}
+html[data-sidebar-booting] .shell,html[data-sidebar-booting] .nav-label{transition:none!important}
+/* Shared dynamic controls: no font glyphs for arrows or selected states. */.select-chevron{display:flex;align-items:center;justify-content:center;width:18px;height:18px}
+.select-chevron .ui-icon{--icon-size:16px}
+.select-option[aria-selected=true]::after{content:none}
+.select-option>.ui-icon{--icon-size:16px;float:right;color:var(--orange);margin-left:10px;margin-top:3px}
+.profile-symbol>.ui-icon{--icon-size:21px}
+.verification-badge{align-items:center;gap:7px}
+.verification-badge>.ui-icon{--icon-size:15px}
+.mini-kpi small>.ui-icon,.agenda-event span>.ui-icon{--icon-size:13px;margin-right:5px}
+.notifications-modal .modal-heading>div::before{content:none}
+.notification-header-icon{grid-column:1;grid-row:2/4;width:80px;height:80px;border-radius:18px;background:linear-gradient(140deg,#118dd1,#10537b);display:grid;place-items:center}
+.notification-header-icon>.ui-icon{width:38px;height:38px;stroke-width:1.8}
+.notifications-modal #modal-close{padding:0;display:inline-flex;align-items:center;justify-content:center}
+.notification-kind .ui-icon{width:24px;height:24px}
+.notification-category .ui-icon{width:21px;height:21px}
+.notification-pagination .ui-icon{width:20px;height:20px}
+.notification-row-actions .ui-icon{width:13px;height:13px}
+.notification-row-actions .button{gap:5px}
+.notification-empty-icon>.ui-icon{width:34px;height:34px}
+@media(max-width:800px){.notification-header-icon{width:58px;height:58px;border-radius:14px}
+.notification-header-icon>.ui-icon{width:30px;height:30px}
+.notification-kind .ui-icon{width:21px;height:21px}}
+@media(max-width:600px){html[data-sidebar=collapsed] .shell{padding:10px;gap:10px}
+html[data-sidebar=collapsed] main{padding:16px 8px}}
+
+
+

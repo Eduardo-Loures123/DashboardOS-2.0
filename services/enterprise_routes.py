@@ -1,6 +1,6 @@
 from functools import wraps
 import click
-from flask import Blueprint, g, request, jsonify, render_template, session, redirect
+from flask import Blueprint, g, request, jsonify, render_template, session, redirect, send_file
 from .enterprise_service import EnterpriseService
 from .mail_service import process_outbox
 
@@ -8,6 +8,9 @@ from .mail_service import process_outbox
 def register(app, auth, store, pages):
     service = EnterpriseService(auth)
     app.config['ENTERPRISE'] = service
+    from .profile_service import ProfileService
+    profiles=ProfileService(auth,service)
+    app.config['PROFILES']=profiles
     store.observer = lambda raw: service.scan(raw) if service.ready() else None
     bp = Blueprint('enterprise', __name__)
 
@@ -38,10 +41,20 @@ def register(app, auth, store, pages):
             raise ValueError('Dados inválidos.')
         return value
 
+    @bp.get('/ajuda')
+    def help_page():
+        return render_template('help.html',page='ajuda',title='Ajuda e suporte',pages=pages,csrf=session['csrf'],user=g.user)
+
     @bp.get('/perfil')
     @allowed()
     def profile_page():
         return render_template('account.html', page='perfil', title='Meu perfil', pages=pages, csrf=session['csrf'], user=g.user)
+
+    @bp.get('/configuracoes')
+    @bp.get('/settings')
+    @allowed()
+    def preferences_redirect():
+        return redirect('/perfil?tab=preferences')
 
     @bp.get('/administracao')
     @allowed(True)
@@ -52,19 +65,71 @@ def register(app, auth, store, pages):
     @allowed()
     def profile():
         if request.method == 'GET':
-            return jsonify(service.profile(g.user['id']))
-        uid, sensitive = service.update_profile(g.user['id'], payload())
+            return jsonify(profiles.profile(g.user['id']))
+        sensitive = profiles.update(g.user['id'], payload())
         if sensitive:
             auth.revoke(session.get('auth_token'))
             session.clear()
             return jsonify(message='Perfil atualizado. Entre novamente para continuar.', redirect='/login')
-        return jsonify(message='Perfil atualizado.')
+        return jsonify(message='Perfil atualizado.',profile=profiles.profile(g.user['id']))
 
-    @bp.post('/api/profile/verification')
+    @bp.get('/api/profile/login-availability')
+    @allowed()
+    def login_availability():
+        return jsonify(available=profiles.login_available(g.user['id'],request.args.get('login','')))
+
+    @bp.route('/api/profile/avatar',methods=['GET','POST','DELETE'])
+    @allowed()
+    def avatar():
+        if request.method=='GET':
+            path=profiles.avatar_path(g.user['id'])
+            if path is None or not path.is_file(): return jsonify(error='Foto não cadastrada.'),404
+            return send_file(path,mimetype='image/webp',max_age=0)
+        if request.method=='POST':
+            request.max_content_length=6*1024*1024
+            try:profiles.set_avatar(g.user['id'],request.files.get('photo'))
+            except OSError:return jsonify(error='Não foi possível armazenar a foto. Verifique as permissões e o espaço local.'),503
+        else:
+            try:profiles.remove_avatar(g.user['id'])
+            except OSError:return jsonify(error='Não foi possível remover a foto. Verifique o armazenamento local.'),503
+        return jsonify(message='Foto atualizada.',profile=profiles.profile(g.user['id']))
+
+    @bp.route('/api/profile/email-change',methods=['POST','DELETE'])
+    @allowed()
+    def email_change():
+        if request.method=='DELETE': profiles.cancel_email(g.user['id'])
+        else:
+            data=payload()
+            profiles.change_email(g.user['id'],data.get('email'),data.get('current_password',''))
+        return jsonify(message='Solicitação preparada. A entrega do código ainda não está habilitada.' if request.method=='POST' else 'Solicitação cancelada.',delivery_available=False,profile=profiles.profile(g.user['id']))
+
+    @bp.post('/api/profile/email-change/confirm')
+    @allowed()
+    def email_change_confirm():
+        profiles.confirm_email(g.user['id'],payload().get('token'))
+        return jsonify(message='Endereço confirmado.',profile=profiles.profile(g.user['id']))
+
+    @bp.get('/api/profile/activities')
+    @allowed()
+    def activities():
+        return jsonify(profiles.activities(g.user['id'],request.args.get('operation',''),request.args.get('q',''),request.args.get('page',1)))
+
+    @app.cli.command('migrar-perfil')
+    @click.confirmation_option(prompt='Criar backup e aplicar atualização aditiva do perfil no banco configurado?')
+    def migrate_profile():
+        click.echo('Perfil atualizado. Backup: '+str(profiles.migrate()))
+
+    @app.cli.command('limpar-atividades')
+    def cleanup_activities():
+        click.echo('Atividades expiradas removidas: '+str(profiles.cleanup_activities()))
+
+    @bp.route('/api/profile/verification', methods=['GET', 'POST'])
     @allowed()
     def verify_request():
+        if request.method == 'GET':
+            return jsonify(service.verification_status(g.user['id']))
         service.token(g.user['id'], g.user['id'], 'verify')
-        return jsonify(message='Confirmação enfileirada. O envio depende da configuração e ativação do provedor de e-mail.')
+        return jsonify(message='Solicitação registrada. A mensagem está na fila e ainda não foi enviada.', **service.verification_status(g.user['id']))
 
     @bp.post('/api/profile/verify')
     @allowed()
@@ -162,11 +227,26 @@ def register(app, auth, store, pages):
 
     @app.cli.command('processar-alertas')
     def process():
+        from .mail_service import email_suspended
+        if email_suspended():
+            raise click.ClickException("Processador legado suspenso nesta release.")
         service.require_ready()
         # Hold Excel lock through snapshot transaction to serialize scans with writes.
         with store.lock():
             count = service.scan(store._read())
         sent = process_outbox(auth)
         click.echo(f'Eventos: {count}; e-mails enviados: {sent}.')
+
+    @app.cli.command('processar-emails')
+    def emails():
+        """Processa somente a fila de e-mails, sem observar ou modificar o Excel."""
+        from .mail_service import mail_configuration
+        service.require_ready()
+        config = mail_configuration()
+        if not config['enabled']:
+            raise click.ClickException('Envio desativado. Configure o provedor e autorize a ativação.')
+        if config['missing']:
+            raise click.ClickException('Configuração ausente: ' + ', '.join(config['missing']))
+        click.echo(f'Mensagens aceitas pelo provedor: {process_outbox(auth)}.')
 
     app.register_blueprint(bp)
